@@ -12,14 +12,18 @@
   "description": "",
   "dependencies": {
     "@supabase/supabase-js": "^1.35.7",
+    "@types/mongoose": "^5.11.96",
     "bcrypt": "^6.0.0",
     "bcryptjs": "^3.0.2",
     "cors": "^2.8.5",
     "dotenv": "^16.5.0",
     "express": "^5.1.0",
-    "morgan": "^1.10.0"
+    "mongoose": "^8.15.0",
+    "morgan": "^1.10.0",
+    "react-native-quick-crypto": "^0.7.13"
   },
   "devDependencies": {
+    "@types/bcrypt": "^5.0.2",
     "@types/cors": "^2.8.18",
     "@types/dotenv": "^6.1.1",
     "@types/express": "^5.0.2",

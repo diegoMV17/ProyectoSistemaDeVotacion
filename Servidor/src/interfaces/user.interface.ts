@@ -1,7 +1,14 @@
-export interface User {
-  id?: number;
+export interface CreateUser {
+  id?: string;
   identificacion: string;
   username: string;
-  password_hash: string;
-  role: string;
+  password_plano: string;
+  role: 'ADMIN' | 'ADMINISTRATIVO' | 'CANDIDATO' | 'VOTANTE';
+}
+export interface UserUpdate {
+  id?: string;
+  identificacion?: string;
+  username?: string;
+  password_plano?: string;
+  role?: 'ADMIN' | 'ADMINISTRATIVO' | 'CANDIDATO' | 'VOTANTE';
 }
