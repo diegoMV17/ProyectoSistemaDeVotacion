@@ -1,17 +1,15 @@
-// src/app.ts
+
 
 import express, { Request, Response, NextFunction } from 'express';
 import cors from 'cors';
 import { config } from './config/config';
 
-// Importar rutas de votación
 import userRoutes from './routes/users.routes';
 import eleccionesRoutes from './routes/elecciones.routes';
 import candidaturasRoutes from './routes/candidaturas.routes';
 import votosRoutes from './routes/votos.routes';
 import perfilesRoutes from './routes/perfiles.routes';
 
-// Inicializar Express
 const app = express();
 
 // Middlewares

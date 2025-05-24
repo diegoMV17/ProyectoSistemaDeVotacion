@@ -1,37 +1,72 @@
 import { Request, Response } from 'express';
-import { supabase } from '../config/supabase';
+import * as usersService from '../services/users.service';
+import { CreateUser } from '../interfaces/user.interface';
 
-export const getAllUsers = async (_req: Request, res: Response) => {
-  const { data, error } = await supabase.from('users').select('*');
-  if (error) return res.status(500).json({ error: error.message });
-  res.json(data);
+export const handleGetAllUsers = async (_req: Request, res: Response) => {
+  try {
+    const data = await usersService.obtenerUsuarios();
+    res.json(data);
+  } catch (error) {
+    const err = error as Error;
+    res.status(500).json({ error: err.message });
+  }
+};
+export const handleGetUserById = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const data = await usersService.obtenerUsuarioPorId(Number(id));
+    res.json(data);
+  } catch (error) {
+    const err = error as Error;
+    res.status(404).json({ error: err.message });
+  }
 };
 
-export const getUserById = async (req: Request, res: Response) => {
-  const { id } = req.params;
-  const { data, error } = await supabase.from('users').select('*').eq('id', id).single();
-  if (error) return res.status(404).json({ error: error.message });
-  res.json(data);
+export const handleCreateUser = async (req: Request, res: Response ) => {
+  try {
+    const { identificacion, username, password_plano, role } = req.body;
+    const newUser: CreateUser = { identificacion, username, password_plano, role };
+    const user = await usersService.crearUsuario(newUser);
+
+    if (!user) {
+      return res.status(400).json({ error: 'Error al crear el usuario' });
+    }
+
+    res.status(201).json(user);
+  } catch (error: any) {
+    console.error('Error en el controlador:', error.message);
+    res.status(500).json({ error: 'Error interno del servidor' });
+  }
 };
 
-export const createUser = async (req: Request, res: Response) => {
-  const { identificacion, username, password_hash, role } = req.body;
-  const { data, error } = await supabase.from('users').insert({ identificacion, username, password_hash, role }).select().single();
-  if (error) return res.status(400).json({ error: error.message });
-  res.status(201).json(data);
+export const handleUpdateUser = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const updatedUser: CreateUser = req.body;
+
+    const user = await usersService.actualizarUsuario(Number(id), updatedUser);
+
+    if (!user) {
+      return res.status(404).json({ error: 'Usuario no encontrado' });
+    }
+
+    res.json(user);
+  } catch (error) {
+    const err = error as Error;
+    res.status(500).json({ error: err.message });
+  }
 };
 
-export const updateUser = async (req: Request, res: Response) => {
-  const { id } = req.params;
-  const { identificacion, username, password_hash, role } = req.body;
-  const { data, error } = await supabase.from('users').update({ identificacion, username, password_hash, role }).eq('id', id).select().single();
-  if (error) return res.status(400).json({ error: error.message });
-  res.json(data);
-};
-
-export const deleteUser = async (req: Request, res: Response) => {
-  const { id } = req.params;
-  const { error } = await supabase.from('users').delete().eq('id', id);
-  if (error) return res.status(500).json({ error: error.message });
-  res.status(204).send();
+export const handleDeleteUser = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const success = await usersService.eliminarUsuario(Number(id));
+    if (!success) {
+      return res.status(404).json({ error: 'Usuario no encontrado' });
+    }
+    res.status(204).send();
+  } catch (error) {
+    const err = error as Error;
+    res.status(500).json({ error: err.message });
+  }
 };
