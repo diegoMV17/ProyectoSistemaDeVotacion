@@ -8,12 +8,14 @@ import {
     TouchableOpacity,
     Alert,
     Modal,
-    Button,
     Pressable,
-    ScrollView
+    ScrollView,
+    ImageBackground
 } from 'react-native';
 import { supabase } from '../lib/supabase';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Ionicons } from '@expo/vector-icons';
+import { useNavigation } from '@react-navigation/native';
 
 export default function AgregarVotacionScreen() {
     const [elecciones, setElecciones] = useState<any[]>([]);
@@ -24,17 +26,22 @@ export default function AgregarVotacionScreen() {
     const [candidaturaSeleccionada, setCandidaturaSeleccionada] = useState<any>(null);
     const [votando, setVotando] = useState(false);
 
+    // Cambios aquí: solo se puede votar en una elección en todo el sistema
+    const [yaVotoEnAlguna, setYaVotoEnAlguna] = useState(false);
+
     const [userid, setUserId] = useState<number | null>(null);
+    const navigation = useNavigation();
 
     useEffect(() => {
         AsyncStorage.getItem('usuario').then((json: string | null) => {
-      if (json) {
-        const usuario = JSON.parse(json);
-        setUserId(usuario.id);
-      }});
+            if (json) {
+                const usuario = JSON.parse(json);
+                setUserId(usuario.id);
+                verificarSiYaVotoEnAlguna(usuario.id);
+            }
+        });
         cargarElecciones();
     }, []);
-
 
     const cargarElecciones = async () => {
         setLoading(true);
@@ -55,37 +62,41 @@ export default function AgregarVotacionScreen() {
         else setCandidaturas([]);
     };
 
+    // Nueva función: verifica si el usuario ya votó en alguna elección
+    const verificarSiYaVotoEnAlguna = async (userId: number) => {
+        const { data } = await supabase
+            .from('votos')
+            .select('id')
+            .eq('userid', userId)
+            .maybeSingle();
+        setYaVotoEnAlguna(!!data);
+    };
+
     const handleSeleccion = async (eleccion: any) => {
         setEleccionSeleccionada(eleccion);
         setCandidaturaSeleccionada(null);
-        await cargarCandidaturas(eleccion.id);
+        if (!yaVotoEnAlguna) {
+            await cargarCandidaturas(eleccion.id);
+        }
         setModalVisible(true);
     };
 
     const guardarVoto = async () => {
-        // Validaciones previas
+        if (yaVotoEnAlguna) {
+            return;
+        }
         if (!userid) {
             Alert.alert('Error', 'No se encontró el usuario en sesión');
-            console.log('userId es nulo o indefinido:', userid);
             return;
         }
         if (!eleccionSeleccionada || !eleccionSeleccionada.id) {
             Alert.alert('Error', 'No se seleccionó una elección');
-            console.log('eleccionSeleccionada es nulo o sin id:', eleccionSeleccionada);
             return;
         }
         if (!candidaturaSeleccionada || !candidaturaSeleccionada.id) {
             Alert.alert('Error', 'Debes seleccionar una candidatura');
-            console.log('candidaturaSeleccionada es nulo o sin id:', candidaturaSeleccionada);
             return;
         }
-
-        // Mostrar los datos antes de guardar
-        console.log('Intentando guardar voto con:', {
-            userid,
-            eleccionid: eleccionSeleccionada.id,
-            candidaturaid: candidaturaSeleccionada.id,
-        });
 
         setVotando(true);
         const { error } = await supabase.from('votos').insert([
@@ -98,10 +109,10 @@ export default function AgregarVotacionScreen() {
         setVotando(false);
 
         if (error) {
-            console.log('Error al guardar voto:', error);
             Alert.alert('Error', 'No se pudo guardar el voto');
         } else {
             Alert.alert('Éxito', '¡Voto guardado!');
+            setYaVotoEnAlguna(true);
             setModalVisible(false);
             setCandidaturaSeleccionada(null);
             setEleccionSeleccionada(null);
@@ -111,100 +122,317 @@ export default function AgregarVotacionScreen() {
     if (loading) {
         return (
             <View style={styles.center}>
-                <ActivityIndicator size="large" color="#007AFF" />
+                <ActivityIndicator size="large" color="#4361ee" />
                 <Text style={styles.loadingText}>Cargando elecciones...</Text>
             </View>
         );
     }
 
     return (
-        <View style={styles.container}>
-            <Text style={styles.title}>Candidaturas disponibles</Text>
-            <Text style={styles.subtitle}>Total elecciones: {elecciones.length}</Text>
-            <FlatList
-                data={elecciones}
-                keyExtractor={(item) => item.id.toString()}
-                renderItem={({ item }) => (
-                    <TouchableOpacity onPress={() => handleSeleccion(item)} style={styles.touchable}>
-                        <View style={styles.card}>
-                            <Text style={styles.eleccion}>🗳️ {item.nombre || 'Sin nombre'}</Text>
-                            <Text style={styles.descripcion}>{item.descripcion || 'Sin descripción'}</Text>
-                            <Text style={styles.descripcion}>Tipo de representante: {item.tipo_representacion}</Text>
-                            <Text style={styles.descripcion}>Estado: {item.estado}</Text>
-                        </View>
-                    </TouchableOpacity>
-                )}
-                ItemSeparatorComponent={() => <View style={styles.separator} />}
-                ListEmptyComponent={<Text style={styles.emptyText}>No hay elecciones disponibles.</Text>}
-            />
-
-            {/* Modal para votar */}
-            <Modal
-                visible={modalVisible}
-                transparent
-                animationType="slide"
-                onRequestClose={() => setModalVisible(false)}
-            >
-                <View style={styles.modalOverlay}>
-                    <View style={styles.modalContent}>
-                        <Text style={{ fontWeight: 'bold', fontSize: 18, marginBottom: 12 }}>
-                            Votar en: {eleccionSeleccionada?.nombre}
-                        </Text>
-                        <Text style={{ marginBottom: 8 }}>Selecciona una candidatura:</Text>
-                        <ScrollView style={{ maxHeight: 200, width: '100%', marginTop: 10 }}>
-                            {candidaturas.length === 0 && (
-                                <Text style={{ color: '#888', textAlign: 'center' }}>No hay candidaturas disponibles.</Text>
-                            )}
-                            {candidaturas.map((cand: any) => (
-                                <Pressable
-                                    key={cand.id}
-                                    onPress={() => setCandidaturaSeleccionada(cand)}
-                                    style={[
-                                        styles.candidaturaItem,
-                                        candidaturaSeleccionada?.id === cand.id && styles.candidaturaItemSelected
-                                    ]}
-                                >
-                                    <Text style={{
-                                        color: candidaturaSeleccionada?.id === cand.id ? '#fff' : '#333',
-                                        fontWeight: 'bold'
-                                    }}>
-                                        {/* Mostrar nombre completo si existe, si no username, si no "Candidato desconocido" */}
-                                        {cand.userprofiles?.nombres
-                                            ? `${cand.userprofiles.nombres} ${cand.userprofiles.apellidos}`
-                                            : cand.users?.username
-                                                ? cand.users.username
-                                                : 'Candidato desconocido'}
-                                    </Text>
-                                    <Text style={{
-                                        color: candidaturaSeleccionada?.id === cand.id ? '#fff' : '#333',
-                                        fontSize: 13,
-                                        marginTop: 2
-                                    }}>
-                                        {cand.propuesta}
-                                    </Text>
-                                </Pressable>
-                            ))}
-                        </ScrollView>
-                        <View style={{ flexDirection: 'row', gap: 12, marginTop: 16 }}>
-                            <Button title="Cancelar" color="#888" onPress={() => setModalVisible(false)} />
-                            <Button
-                                title={votando ? "Guardando..." : "Votar"}
-                                onPress={guardarVoto}
-                                disabled={!candidaturaSeleccionada || votando}
-                            />
-                        </View>
+        <ImageBackground
+            source={require('../assets/fondo.png')}
+            style={styles.bg}
+            resizeMode="cover"
+        >
+            <ScrollView contentContainerStyle={styles.scrollContainer}>
+                <View style={styles.dashboardContainer}>
+                    <View style={styles.logoContainer}>
+                        <Ionicons name="school" size={64} color="#3498db" />
                     </View>
+                    <Text style={styles.title}>Votaciones Disponibles</Text>
+                    <Text style={styles.subtitle}>Total elecciones: {elecciones.length}</Text>
+                    <FlatList
+                        data={elecciones}
+                        keyExtractor={(item) => item.id.toString()}
+                        renderItem={({ item }) => (
+                            <TouchableOpacity
+                                onPress={() => handleSeleccion(item)}
+                                style={[
+                                    styles.touchable,
+                                    yaVotoEnAlguna && { opacity: 0.6 }
+                                ]}
+                                disabled={yaVotoEnAlguna}
+                            >
+                                <View style={styles.card}>
+                                    <Text style={styles.eleccion}>
+                                        <Ionicons name="balloon-outline" size={20} color="#3a0ca3" /> {item.nombre || 'Sin nombre'}
+                                    </Text>
+                                    <Text style={styles.descripcion}>{item.descripcion || 'Sin descripción'}</Text>
+                                    <Text style={styles.info}>Tipo: <Text style={styles.infoValue}>{item.tipo_representacion}</Text></Text>
+                                    <Text style={styles.info}>Estado: <Text style={styles.infoValue}>{item.estado}</Text></Text>
+                                </View>
+                            </TouchableOpacity>
+                        )}
+                        ItemSeparatorComponent={() => <View style={styles.separator} />}
+                        ListEmptyComponent={<Text style={styles.emptyText}>No hay elecciones disponibles.</Text>}
+                        style={{ width: '100%' }}
+                    />
+
+                    {/* Modal para votar */}
+                    <Modal
+                        visible={modalVisible}
+                        transparent
+                        animationType="fade"
+                        onRequestClose={() => setModalVisible(false)}
+                    >
+                        <View style={styles.modalOverlay}>
+                            <View style={styles.modalContent}>
+                                <Text style={styles.modalTitle}>
+                                    <Ionicons name="balloon-outline" size={22} color="#4361ee" /> Votar en: <Text style={{ color: '#4361ee' }}>{eleccionSeleccionada?.nombre}</Text>
+                                </Text>
+                                {yaVotoEnAlguna ? (
+                                    <>
+                                        <Text style={{ color: '#e74c3c', fontWeight: 'bold', marginVertical: 20, textAlign: 'center' }}>
+                                            Ya has votado en una elección. Solo puedes votar una vez.
+                                        </Text>
+                                        <View style={styles.modalBtnRow}>
+                                            <TouchableOpacity
+                                                style={styles.btnCancel}
+                                                onPress={() => {
+                                                    setModalVisible(false);
+                                                    navigation.goBack();
+                                                }}
+                                            >
+                                                <Text style={styles.btnCancelText}>Volver al panel</Text>
+                                            </TouchableOpacity>
+                                        </View>
+                                    </>
+                                ) : (
+                                    <>
+                                        <Text style={styles.modalSubtitle}>Selecciona una candidatura:</Text>
+                                        <ScrollView style={{ maxHeight: 200, width: '100%', marginTop: 10 }}>
+                                            {candidaturas.length === 0 && (
+                                                <Text style={{ color: '#888', textAlign: 'center' }}>No hay candidaturas disponibles.</Text>
+                                            )}
+                                            {candidaturas.map((cand: any) => (
+                                                <Pressable
+                                                    key={cand.id}
+                                                    onPress={() => setCandidaturaSeleccionada(cand)}
+                                                    style={[
+                                                        styles.candidaturaItem,
+                                                        candidaturaSeleccionada?.id === cand.id && styles.candidaturaItemSelected
+                                                    ]}
+                                                >
+                                                    <Text style={{
+                                                        color: candidaturaSeleccionada?.id === cand.id ? '#fff' : '#22223b',
+                                                        fontWeight: 'bold'
+                                                    }}>
+                                                        {cand.users?.username || 'Candidato desconocido'}
+                                                    </Text>
+                                                    <Text style={{
+                                                        color: candidaturaSeleccionada?.id === cand.id ? '#fff' : '#555',
+                                                        fontSize: 13,
+                                                        marginTop: 2
+                                                    }}>
+                                                        {cand.propuesta}
+                                                    </Text>
+                                                </Pressable>
+                                            ))}
+                                        </ScrollView>
+                                        <View style={styles.modalBtnRow}>
+                                            <TouchableOpacity style={styles.btnCancel} onPress={() => setModalVisible(false)}>
+                                                <Text style={styles.btnCancelText}>Cancelar</Text>
+                                            </TouchableOpacity>
+                                            <TouchableOpacity
+                                                style={[
+                                                    styles.btnVotar,
+                                                    (!candidaturaSeleccionada || votando) && { opacity: 0.6 }
+                                                ]}
+                                                onPress={guardarVoto}
+                                                disabled={!candidaturaSeleccionada || votando}
+                                            >
+                                                <Text style={styles.btnVotarText}>{votando ? "Guardando..." : "Votar"}</Text>
+                                            </TouchableOpacity>
+                                        </View>
+                                    </>
+                                )}
+                            </View>
+                        </View>
+                    </Modal>
                 </View>
-            </Modal>
-        </View>
+            </ScrollView>
+        </ImageBackground>
     );
 }
 
 const styles = StyleSheet.create({
-    container: {
+    bg: {
         flex: 1,
-        padding: 20,
+        width: '100%',
+        height: '100%',
+    },
+    scrollContainer: {
+        flexGrow: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        paddingVertical: 32,
+    },
+    dashboardContainer: {
+        width: '98%',
+        maxWidth: 500,
         backgroundColor: '#fff',
+        padding: 28,
+        borderRadius: 20,
+        borderWidth: 1,
+        borderColor: 'rgba(0,0,0,0.04)',
+        shadowColor: '#2c3e50',
+        shadowOffset: { width: 0, height: 8 },
+        shadowOpacity: 0.10,
+        shadowRadius: 24,
+        elevation: 10,
+        alignItems: 'center',
+    },
+    logoContainer: {
+        backgroundColor: '#ecf0f1',
+        borderRadius: 60,
+        width: 90,
+        height: 90,
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginBottom: 10,
+        borderWidth: 2,
+        borderColor: '#fff',
+        shadowColor: '#3498db',
+        shadowOpacity: 0.10,
+        shadowRadius: 8,
+        elevation: 4,
+    },
+    title: {
+        color: '#3a0ca3',
+        fontWeight: '700',
+        fontSize: 24,
+        marginBottom: 6,
+        letterSpacing: 0.5,
+        textAlign: 'center',
+    },
+    subtitle: {
+        fontSize: 15,
+        color: '#666',
+        marginBottom: 18,
+        textAlign: 'center',
+    },
+    touchable: {
+        borderRadius: 14,
+        overflow: 'hidden',
+        marginBottom: 8,
+    },
+    card: {
+        backgroundColor: '#f7fafd',
+        padding: 18,
+        borderRadius: 14,
+        shadowColor: '#4361ee',
+        shadowOpacity: 0.08,
+        shadowOffset: { width: 0, height: 2 },
+        shadowRadius: 6,
+        elevation: 2,
+        borderLeftWidth: 5,
+        borderLeftColor: '#4361ee',
+    },
+    eleccion: {
+        fontSize: 18,
+        fontWeight: 'bold',
+        color: '#3a0ca3',
+        marginBottom: 4,
+    },
+    descripcion: {
+        fontSize: 15,
+        color: '#22223b',
+        marginBottom: 4,
+    },
+    info: {
+        fontSize: 14,
+        color: '#555',
+        marginTop: 2,
+    },
+    infoValue: {
+        fontWeight: 'bold',
+        color: '#4361ee',
+    },
+    separator: {
+        height: 10,
+    },
+    emptyText: {
+        fontSize: 16,
+        color: '#888',
+        textAlign: 'center',
+        marginTop: 20,
+    },
+    modalOverlay: {
+        flex: 1,
+        backgroundColor: 'rgba(0,0,0,0.25)',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    modalContent: {
+        backgroundColor: '#fff',
+        padding: 26,
+        borderRadius: 18,
+        width: '90%',
+        alignItems: 'center',
+        shadowColor: '#4361ee',
+        shadowOpacity: 0.13,
+        shadowOffset: { width: 0, height: 4 },
+        shadowRadius: 12,
+        elevation: 8,
+    },
+    modalTitle: {
+        fontWeight: 'bold',
+        fontSize: 20,
+        marginBottom: 10,
+        color: '#3a0ca3',
+        textAlign: 'center',
+    },
+    modalSubtitle: {
+        fontSize: 15,
+        color: '#22223b',
+        marginBottom: 8,
+        textAlign: 'center',
+    },
+    candidaturaItem: {
+        padding: 12,
+        borderRadius: 8,
+        backgroundColor: '#eaf1ff',
+        marginBottom: 8,
+        alignItems: 'flex-start',
+        borderLeftWidth: 4,
+        borderLeftColor: '#3a0ca3',
+    },
+    candidaturaItemSelected: {
+        backgroundColor: '#4361ee',
+        borderLeftColor: '#3a0ca3',
+    },
+    modalBtnRow: {
+        flexDirection: 'row',
+        gap: 14,
+        marginTop: 18,
+        width: '100%',
+        justifyContent: 'center',
+    },
+    btnCancel: {
+        backgroundColor: '#e3e7ef',
+        paddingVertical: 12,
+        paddingHorizontal: 28,
+        borderRadius: 10,
+        alignItems: 'center',
+        minWidth: 100,
+    },
+    btnCancelText: {
+        color: '#3a0ca3',
+        fontWeight: 'bold',
+        fontSize: 16,
+    },
+    btnVotar: {
+        backgroundColor: '#4361ee',
+        paddingVertical: 12,
+        paddingHorizontal: 28,
+        borderRadius: 10,
+        alignItems: 'center',
+        minWidth: 100,
+    },
+    btnVotarText: {
+        color: '#fff',
+        fontWeight: 'bold',
+        fontSize: 16,
     },
     center: {
         flex: 1,
@@ -215,72 +443,5 @@ const styles = StyleSheet.create({
         marginTop: 10,
         fontSize: 16,
         color: '#555',
-    },
-    title: {
-        fontSize: 24,
-        fontWeight: 'bold',
-        marginBottom: 8,
-        color: '#333',
-    },
-    subtitle: {
-        fontSize: 16,
-        color: '#666',
-        marginBottom: 16,
-    },
-    touchable: {
-        borderRadius: 10,
-        overflow: 'hidden',
-    },
-    card: {
-        backgroundColor: '#f9f9f9',
-        padding: 16,
-        borderRadius: 10,
-        shadowColor: '#000',
-        shadowOpacity: 0.1,
-        shadowOffset: { width: 0, height: 2 },
-        shadowRadius: 4,
-        elevation: 3,
-    },
-    eleccion: {
-        fontSize: 18,
-        fontWeight: 'bold',
-        color: '#007AFF',
-    },
-    descripcion: {
-        fontSize: 15,
-        color: '#333',
-        marginTop: 6,
-    },
-    separator: {
-        height: 12,
-    },
-    emptyText: {
-        fontSize: 16,
-        color: '#888',
-        textAlign: 'center',
-        marginTop: 20,
-    },
-    modalOverlay: {
-        flex: 1,
-        backgroundColor: 'rgba(0,0,0,0.4)',
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
-    modalContent: {
-        backgroundColor: '#fff',
-        padding: 24,
-        borderRadius: 12,
-        width: '85%',
-        alignItems: 'center',
-    },
-    candidaturaItem: {
-        padding: 12,
-        borderRadius: 8,
-        backgroundColor: '#f0f0f0',
-        marginBottom: 8,
-        alignItems: 'flex-start',
-    },
-    candidaturaItemSelected: {
-        backgroundColor: '#007AFF',
     },
 });

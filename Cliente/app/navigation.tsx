@@ -62,9 +62,22 @@ export default function Navigation({ onLogout }: { onLogout: () => void }) {
           onLogout();
         }
       }}
-      style={{ marginRight: 15 }}
+      style={{
+        marginRight: 18,
+        backgroundColor: '#e74c3c',
+        paddingVertical: 6,
+        paddingHorizontal: 14,
+        borderRadius: 22,
+        flexDirection: 'row',
+        alignItems: 'center',
+        shadowColor: '#e74c3c',
+        shadowOpacity: 0.18,
+        shadowRadius: 6,
+        elevation: 4,
+      }}
     >
-      <Text style={{ color: 'red', fontWeight: 'bold' }}>Salir</Text>
+      <Ionicons name="log-out-outline" size={18} color="#fff" style={{ marginRight: 6 }} />
+      <Text style={{ color: '#fff', fontWeight: 'bold', fontSize: 15 }}>Salir</Text>
     </TouchableOpacity>
   );
 
@@ -74,7 +87,7 @@ export default function Navigation({ onLogout }: { onLogout: () => void }) {
         screenOptions={({ route }) => ({
           tabBarIcon: ({ color, size }) => {
             let iconName: keyof typeof Ionicons.glyphMap = 'help';
-            if (route.name === 'Dashboard') iconName = 'home';
+            if (route.name === 'Panel') iconName = 'home';
             else if (route.name === 'Productos') iconName = 'pricetags';
             else if (route.name === 'Perfil') iconName = 'person';
             else if (route.name === 'Inventario') iconName = 'cube';
@@ -96,7 +109,7 @@ export default function Navigation({ onLogout }: { onLogout: () => void }) {
         {/* <Tab.Screen name="Inventario" component={InventoryScreen} /> */}
         {rol === 'ADMIN' && (
           <>
-            <Tab.Screen name="Dashboard" component={PanelAdminScreen} />
+            <Tab.Screen name="Panel" component={PanelAdminScreen} />
             <Tab.Screen name="Usuarios" component={UserManagementScreen} />
             <Tab.Screen name="Crear Eleccion" component={CrearEleccionScreen} />
             <Tab.Screen name="Lista Elecciones" component={EditarEleccionesScreen} />
@@ -106,20 +119,20 @@ export default function Navigation({ onLogout }: { onLogout: () => void }) {
         )}
         {rol === 'CANDIDATO' && (
           <>
-            <Tab.Screen name="Dashboard" component={PanelCandidatoScreen} />
+            <Tab.Screen name="Panel" component={PanelCandidatoScreen} />
             <Tab.Screen name="Lista de candidaturas" component={ListaCandidaturaScreen} />
           </>
         )}
         {rol === 'VOTANTE' && (
           <>
-            <Tab.Screen name="Dashboard" component={PanelVotanteScreen} />
+            <Tab.Screen name="Panel" component={PanelVotanteScreen} />
             <Tab.Screen name="Realizar Votacion" component={AgregarVotacionScreen} />
-            <Tab.Screen name="Lista de candidaturas" component={ListaCandidaturaScreen} />
+            
           </>
         )}
         {rol === 'ADMINISTRATIVO' && (
           <>
-            <Tab.Screen name="Dashboard" component={PanelAdministrativoScreen} />
+            <Tab.Screen name="Panel" component={PanelAdministrativoScreen} />
             <Tab.Screen name="Lista de candidaturas" component={ListaCandidaturaScreen} />
           </>
         )}
