@@ -452,20 +452,26 @@ const styles = StyleSheet.create({
   },
   userActions: {
     flexDirection: 'row',
-    gap: 8,
+    alignItems: 'center',
+    justifyContent: 'flex-end',
+    flexShrink: 0,
+    flexWrap: 'wrap',
+    gap: 6,
   },
   editBtn: {
     backgroundColor: '#4895ef',
     borderRadius: 8,
     paddingVertical: 6,
     paddingHorizontal: 14,
-    marginRight: 6,
+    marginRight: 0,
+    marginBottom: 4,
   },
   deleteBtn: {
     backgroundColor: '#ef476f',
     borderRadius: 8,
     paddingVertical: 6,
     paddingHorizontal: 14,
+    marginBottom: 4,
   },
   actionText: {
     color: '#fff',

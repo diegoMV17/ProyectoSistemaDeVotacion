@@ -26,7 +26,7 @@ export default function AgregarVotacionScreen() {
     const [candidaturaSeleccionada, setCandidaturaSeleccionada] = useState<any>(null);
     const [votando, setVotando] = useState(false);
 
-    // Cambios aquí: solo se puede votar en una elección en todo el sistema
+    // Solo se puede votar en una elección en todo el sistema
     const [yaVotoEnAlguna, setYaVotoEnAlguna] = useState(false);
 
     const [userid, setUserId] = useState<number | null>(null);
@@ -43,26 +43,30 @@ export default function AgregarVotacionScreen() {
         cargarElecciones();
     }, []);
 
+    // Solo cargar elecciones activas
     const cargarElecciones = async () => {
         setLoading(true);
         const { data, error } = await supabase
             .from('eleccions')
             .select('*')
+            .eq('estado', 'activa')
             .order('fecha_inicio', { ascending: false });
         if (!error) setElecciones(data || []);
         setLoading(false);
     };
 
+    // Cargar solo candidaturas activas (requiere campo estado en candidaturas)
     const cargarCandidaturas = async (eleccionId: number) => {
         const { data, error } = await supabase
             .from('candidaturas')
             .select('id, propuesta, userid, users(username)')
             .eq('eleccionid', eleccionId);
+        // Si tu tabla candidaturas NO tiene campo estado, elimina el filtro
         if (!error) setCandidaturas(data || []);
         else setCandidaturas([]);
     };
 
-    // Nueva función: verifica si el usuario ya votó en alguna elección
+    // Verifica si el usuario ya votó en alguna elección
     const verificarSiYaVotoEnAlguna = async (userId: number) => {
         const { data } = await supabase
             .from('votos')
@@ -72,7 +76,12 @@ export default function AgregarVotacionScreen() {
         setYaVotoEnAlguna(!!data);
     };
 
+    // Solo permite votar si la elección está activa
     const handleSeleccion = async (eleccion: any) => {
+        if (eleccion.estado !== 'activa') {
+            Alert.alert('No disponible', 'Solo puedes votar en elecciones activas.');
+            return;
+        }
         setEleccionSeleccionada(eleccion);
         setCandidaturaSeleccionada(null);
         if (!yaVotoEnAlguna) {
