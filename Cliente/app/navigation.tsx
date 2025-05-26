@@ -9,6 +9,16 @@ import UserManagementScreen from '../screens/UserManagementScreen';
 import { useEffect, useState } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Platform, TouchableOpacity, Text } from 'react-native';
+import PanelCandidatoScreen from '../screens/PanelCandidatoScreen';
+import PanelVotanteScreen from '../screens/PanelVotanteScreen';
+import PanelAdministrativoScreen from '../screens/PanelAdministrativoScreen';
+import PanelAdminScreen from '../screens/PanelAdminScreen';
+import CrearEleccionScreen from '../screens/CrearEleccionScreen';
+import EditarEleccionesScreen from '../screens/EditarEleccionScreen';
+import AgregarCandidatoScreen from '../screens/AgregarCandidatoScreen';
+import AgregarVotacionScreen from '../screens/AgregarVotacionScreen';
+import ResultadosVotacionesScreen from '../screens/ResultadosVotacionesScreen';
+import ListaCandidaturaScreen from '../screens/ListaCandidaturasScreen';
 
 const Tab = createBottomTabNavigator();
 
@@ -64,23 +74,56 @@ export default function Navigation({ onLogout }: { onLogout: () => void }) {
         screenOptions={({ route }) => ({
           tabBarIcon: ({ color, size }) => {
             let iconName: keyof typeof Ionicons.glyphMap = 'help';
-            if (route.name === 'Inicio') iconName = 'home';
+            if (route.name === 'Dashboard') iconName = 'home';
             else if (route.name === 'Productos') iconName = 'pricetags';
             else if (route.name === 'Perfil') iconName = 'person';
             else if (route.name === 'Inventario') iconName = 'cube';
             else if (route.name === 'Usuarios') iconName = 'people';
+            else if (route.name === 'Crear Eleccion') iconName = 'checkbox-outline';
+            else if (route.name === 'Lista Elecciones') iconName = 'create-outline';
+            else if (route.name === 'Asignar Candidato') iconName = 'add-circle-outline';
+            else if (route.name === 'Realizar Votacion') iconName = 'checkmark-circle-outline';
+            else if (route.name === 'Lista de candidaturas') iconName = 'list-outline';
+            else if (route.name === 'Resulados') iconName = 'bar-chart-outline';
             return <Ionicons name={iconName} size={size} color={color} />;
           },
           headerRight,
         })}
       >
-        <Tab.Screen name="Inicio" component={HomeScreen} />
-        <Tab.Screen name="Productos" component={ProductScreen} />
-        <Tab.Screen name="Perfil" component={ProfileScreen} />
-        <Tab.Screen name="Inventario" component={InventoryScreen} />
+        {/* <Tab.Screen name="Inicio" component={HomeScreen} />
+        <Tab.Screen name="Productos" component={ProductScreen} /> */}
+
+        {/* <Tab.Screen name="Inventario" component={InventoryScreen} /> */}
         {rol === 'ADMIN' && (
-          <Tab.Screen name="Usuarios" component={UserManagementScreen} />
+          <>
+            <Tab.Screen name="Dashboard" component={PanelAdminScreen} />
+            <Tab.Screen name="Usuarios" component={UserManagementScreen} />
+            <Tab.Screen name="Crear Eleccion" component={CrearEleccionScreen} />
+            <Tab.Screen name="Lista Elecciones" component={EditarEleccionesScreen} />
+            <Tab.Screen name="Asignar Candidato" component={AgregarCandidatoScreen} />
+            <Tab.Screen name="Lista de candidaturas" component={ListaCandidaturaScreen} />
+          </>
         )}
+        {rol === 'CANDIDATO' && (
+          <>
+            <Tab.Screen name="Dashboard" component={PanelCandidatoScreen} />
+            <Tab.Screen name="Lista de candidaturas" component={ListaCandidaturaScreen} />
+          </>
+        )}
+        {rol === 'VOTANTE' && (
+          <>
+            <Tab.Screen name="Dashboard" component={PanelVotanteScreen} />
+            <Tab.Screen name="Realizar Votacion" component={AgregarVotacionScreen} />
+            <Tab.Screen name="Lista de candidaturas" component={ListaCandidaturaScreen} />
+          </>
+        )}
+        {rol === 'ADMINISTRATIVO' && (
+          <>
+            <Tab.Screen name="Dashboard" component={PanelAdministrativoScreen} />
+          </>
+        )}
+        <Tab.Screen name="Resulados" component={ResultadosVotacionesScreen} />
+        <Tab.Screen name="Perfil" component={ProfileScreen} />
       </Tab.Navigator>
     </NavigationContainer>
   );

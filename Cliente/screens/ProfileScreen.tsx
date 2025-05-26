@@ -8,174 +8,366 @@ import {
   KeyboardAvoidingView,
   Platform,
   Alert,
+  TouchableOpacity,
+  ScrollView,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Picker } from '@react-native-picker/picker';
+import { LinearGradient } from 'expo-linear-gradient';
+import { supabase } from '../lib/supabase';
 
 export default function ProfileScreen() {
-  const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
-  const [bio, setBio] = useState('');
-  const [saved, setSaved] = useState(false);
-  const [savedData, setSavedData] = useState<{ name: string; email: string; bio: string } | null>(null);
+  const [nombres, setNombres] = useState('');
+  const [apellidos, setApellidos] = useState('');
+  const [edad, setEdad] = useState('');
+  const [genero, setGenero] = useState('');
   const [mensajeExito, setMensajeExito] = useState('');
-
-  const PERFIL_KEY = 'perfil_usuario';
-
-  const guardarPerfil = async (data: { name: string; email: string; bio: string }) => {
-    try {
-      await AsyncStorage.setItem(PERFIL_KEY, JSON.stringify(data));
-    } catch (error) {
-      console.error('Error guardando perfil:', error);
-    }
-  };
-
-  const cargarPerfil = async () => {
-    try {
-      const json = await AsyncStorage.getItem(PERFIL_KEY);
-      if (json) {
-        const datos = JSON.parse(json);
-        setSavedData(datos);
-        setSaved(true);
-      }
-    } catch (error) {
-      console.error('Error cargando perfil:', error);
-    }
-  };
-
-  const eliminarPerfil = async () => {
-    try {
-      await AsyncStorage.removeItem(PERFIL_KEY);
-      setSaved(false);
-      setSavedData(null);
-      setName(savedData?.name || '');
-      setEmail(savedData?.email || '');
-      setBio(savedData?.bio || '');
-
-      setMensajeExito('🗑️ Perfil eliminado correctamente.');
-      setTimeout(() => setMensajeExito(''), 3000);
-    } catch (error) {
-      console.error('Error eliminando perfil:', error);
-    }
-  };
+  const [userId, setUserId] = useState<number | null>(null);
 
   useEffect(() => {
-    cargarPerfil();
+    AsyncStorage.getItem('usuario').then(json => {
+      if (json) {
+        const usuario = JSON.parse(json);
+        setUserId(usuario.id);
+      }
+    });
   }, []);
 
-  const handleSave = () => {
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-
-    if (!name || !email || !bio) {
+  const guardarPerfilEnBD = async () => {
+    if (!userId || !nombres || !apellidos || !edad || !genero) {
       Alert.alert('Campos incompletos', 'Por favor completa todos los campos.');
       return;
     }
+    try {
+      // Busca todos los perfiles de ese usuario
+      const { data: existentes, error: errorSelect } = await supabase
+        .from('userprofiles')
+        .select('id')
+        .eq('user_id', userId);
 
-    if (!emailRegex.test(email)) {
-      Alert.alert('Correo inválido', 'Por favor ingresa un correo electrónico válido.');
+      if (errorSelect) {
+        console.error('Error buscando perfil:', errorSelect);
+        throw errorSelect;
+      }
+
+      let error;
+      if (existentes && existentes.length > 0) {
+        // Si existe al menos uno, actualiza el primero usando el id del perfil
+        const idPerfil = existentes[0].id;
+        ({ error } = await supabase
+          .from('userprofiles')
+          .update({
+            nombres,
+            apellidos,
+            edad: parseInt(edad, 10),
+            genero,
+          })
+          .eq('id', idPerfil));
+      } else {
+        // Si no existe ninguno, inserta
+        ({ error } = await supabase
+          .from('userprofiles')
+          .insert([{
+            user_id: userId,
+            nombres,
+            apellidos,
+            edad: parseInt(edad, 10),
+            genero,
+          }]));
+      }
+
+      if (error) {
+        console.error('Error de Supabase:', error);
+        throw error;
+      }
+      setMensajeExito('✅ Perfil guardado correctamente.');
+      setNombres('');
+      setApellidos('');
+      setEdad('');
+      setGenero('');
+      setTimeout(() => setMensajeExito(''), 3000);
+    } catch (error) {
+      Alert.alert('Error', 'No se pudo guardar el perfil en la base de datos.');
+    }
+  };
+
+  const eliminarPerfilEnBD = async () => {
+    if (!userId) {
+      Alert.alert('Error', 'No se encontró el usuario.');
+      return;
+    }
+    try {
+      const { error } = await supabase
+        .from('userprofiles')
+        .delete()
+        .eq('user_id', userId);
+      if (error) {
+        console.error('Error al eliminar perfil:', error);
+        throw error;
+      }
+      setMensajeExito('🗑️ Perfil eliminado correctamente.');
+      setNombres('');
+      setApellidos('');
+      setEdad('');
+      setGenero('');
+      setTimeout(() => setMensajeExito(''), 3000);
+    } catch (error) {
+      Alert.alert('Error', 'No se pudo eliminar el perfil en la base de datos.');
+    }
+  };
+
+  const cargarPerfilEnBD = async () => {
+    if (!userId) {
+      Alert.alert('Error', 'No se encontró el usuario.');
+      return;
+    }
+    try {
+      const { data, error } = await supabase
+      .from('userprofiles')
+      .select('nombres, apellidos, edad, genero, user_id')
+      .eq('user_id', userId);
+
+    if (error) {
+      console.error('Error al cargar perfil:', error);
+      Alert.alert('Error', 'No se pudo cargar el perfil.');
       return;
     }
 
-    const data = { name, email, bio };
-    guardarPerfil(data);
-    setSavedData(data);
-    setSaved(true);
+    // Busca el perfil que tenga el user_id correcto
+    const perfil = data && data.length > 0
+      ? data.find((p) => p.user_id === userId)
+      : null;
 
-    setName('');
-    setEmail('');
-    setBio('');
+      if (!perfil) {
+      setMensajeExito('ℹ️ No hay perfil para este usuario. Puedes crearlo.');
+      setNombres('');
+      setApellidos('');
+      setEdad('');
+      setGenero('');
+      setTimeout(() => setMensajeExito(''), 3000);
+      return;
+    }
 
-    setMensajeExito('✅ Perfil guardado correctamente.');
+    setNombres(perfil.nombres || '');
+    setApellidos(perfil.apellidos || '');
+    setEdad(perfil.edad ? perfil.edad.toString() : '');
+    setGenero(perfil.genero || '');
+    setMensajeExito('✏️ Perfil cargado para edición.');
     setTimeout(() => setMensajeExito(''), 3000);
-  };
+  } catch (error) {
+    Alert.alert('Error', 'No se pudo cargar el perfil.');
+  }
+};
 
   return (
-    <KeyboardAvoidingView
-      style={styles.container}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+    <LinearGradient
+      colors={['#f0f4ff', '#e6ecff']}
+      style={{ flex: 1 }}
     >
-      <Text style={styles.title}>Perfil del Usuario</Text>
-
-      {mensajeExito !== '' && (
-        <View style={styles.flash}>
-          <Text style={styles.flashText}>{mensajeExito}</Text>
+      <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
+        <View style={styles.profileCard}>
+          <View style={styles.profileHeader}>
+            <Text style={styles.headerIcon}>🧑‍💼</Text>
+            <Text style={styles.headerTitle}>Perfil del Usuario</Text>
+          </View>
+          <View style={styles.cardBody}>
+            {mensajeExito !== '' && (
+              <View style={styles.flash}>
+                <Text style={styles.flashText}>{mensajeExito}</Text>
+              </View>
+            )}
+            <Text style={styles.formLabel}>Nombres</Text>
+            <TextInput
+              placeholder="Nombres"
+              style={styles.input}
+              value={nombres}
+              onChangeText={setNombres}
+            />
+            <Text style={styles.formLabel}>Apellidos</Text>
+            <TextInput
+              placeholder="Apellidos"
+              style={styles.input}
+              value={apellidos}
+              onChangeText={setApellidos}
+            />
+            <Text style={styles.formLabel}>Edad</Text>
+            <TextInput
+              placeholder="Edad"
+              style={styles.input}
+              value={edad}
+              onChangeText={setEdad}
+              keyboardType="numeric"
+            />
+            <Text style={styles.formLabel}>Género</Text>
+            <View style={styles.pickerContainer}>
+              <Picker
+                selectedValue={genero}
+                onValueChange={setGenero}
+                style={styles.picker}
+              >
+                <Picker.Item label="Selecciona género..." value="" />
+                <Picker.Item label="Masculino" value="masculino" />
+                <Picker.Item label="Femenino" value="femenino" />
+                <Picker.Item label="Otro" value="otro" />
+              </Picker>
+            </View>
+            <View style={styles.buttonRow}>
+              <TouchableOpacity style={styles.btnPrimary} onPress={guardarPerfilEnBD}>
+                <Text style={styles.btnText}>Guardar perfil</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.btnSecondary} onPress={eliminarPerfilEnBD}>
+                <Text style={styles.btnText}>Eliminar perfil</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.btnEdit} onPress={cargarPerfilEnBD}>
+                <Text style={styles.btnText}>Editar perfil</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
         </View>
-      )}
-
-      <TextInput
-        placeholder="Nombre"
-        style={styles.input}
-        value={name}
-        onChangeText={setName}
-      />
-
-      <TextInput
-        placeholder="Correo electrónico"
-        style={styles.input}
-        value={email}
-        onChangeText={setEmail}
-        keyboardType="email-address"
-      />
-
-      <TextInput
-        placeholder="Biografía"
-        style={[styles.input, { height: 100 }]}
-        value={bio}
-        onChangeText={setBio}
-        multiline
-      />
-
-      <Button title="Guardar perfil" onPress={handleSave} />
-
-      {saved && savedData && (
-        <>
-          <View style={styles.result}>
-            <Text style={styles.resultText}>✅ Perfil guardado:</Text>
-            <Text>👤 Nombre: {savedData.name}</Text>
-            <Text>📧 Correo: {savedData.email}</Text>
-            <Text>📝 Bio: {savedData.bio}</Text>
-          </View>
-
-          <View style={{ marginTop: 10 }}>
-            <Button title="Eliminar perfil" onPress={eliminarPerfil} color="#cc0000" />
-          </View>
-        </>
-      )}
-    </KeyboardAvoidingView>
+      </ScrollView>
+    </LinearGradient>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 20, backgroundColor: '#f0f0f0' },
-  title: { fontSize: 24, fontWeight: 'bold', marginBottom: 20, textAlign: 'center' },
-  input: {
-    backgroundColor: 'white',
-    padding: 10,
-    borderRadius: 8,
-    marginBottom: 15,
+  profileCard: {
+    maxWidth: 500,
+    width: '95%',
+    alignSelf: 'center',
+    marginTop: 40,
+    backgroundColor: '#fff',
+    borderRadius: 18,
+    shadowColor: '#1a237e',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.18,
+    shadowRadius: 24,
+    elevation: 8,
     borderWidth: 1,
-    borderColor: '#ccc',
+    borderColor: '#e3e7ef',
+    overflow: 'hidden',
   },
-  result: {
-    marginTop: 20,
-    padding: 15,
-    backgroundColor: '#e0ffe0',
-    borderRadius: 8,
+  profileHeader: {
+    backgroundColor: '#1a237e',
+    paddingVertical: 28,
+    paddingHorizontal: 24,
+    borderTopLeftRadius: 18,
+    borderTopRightRadius: 18,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 14,
   },
-  resultText: {
-    fontWeight: 'bold',
-    marginBottom: 5,
+  headerTitle: {
+    color: '#fff',
+    fontWeight: '800',
+    fontSize: 26,
+    letterSpacing: 0.5,
+    textShadowColor: 'rgba(0,0,0,0.13)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 3,
+  },
+  headerIcon: {
+    fontSize: 36,
+    marginRight: 12,
+    textShadowColor: 'rgba(0,0,0,0.10)',
+    textShadowOffset: { width: 0, height: 0 },
+    textShadowRadius: 2,
+  },
+  cardBody: {
+    paddingVertical: 36,
+    paddingHorizontal: 28,
+    backgroundColor: '#f8fafc',
+  },
+  formLabel: {
+    fontWeight: '700',
+    fontSize: 15,
+    color: '#263159',
+    marginBottom: 7,
+    marginTop: 12,
+    letterSpacing: 0.2,
+  },
+  input: {
+    backgroundColor: '#f4f6fb',
+    padding: 13,
+    borderRadius: 9,
+    marginBottom: 10,
+    borderWidth: 1.2,
+    borderColor: '#bfc7d1',
+    fontSize: 15,
+    color: '#263159',
+  },
+  pickerContainer: {
+    backgroundColor: '#f4f6fb',
+    borderRadius: 9,
+    borderWidth: 1.2,
+    borderColor: '#bfc7d1',
+    marginBottom: 18,
+    overflow: 'hidden',
+  },
+  picker: {
+    width: '100%',
+    height: 48,
+    color: '#263159',
   },
   flash: {
-    backgroundColor: '#d1ecf1',
-    padding: 10,
-    borderRadius: 6,
-    marginBottom: 15,
-    borderColor: '#bee5eb',
+    backgroundColor: '#e3f0ff',
+    padding: 13,
+    borderRadius: 14,
+    marginBottom: 18,
+    borderColor: '#b3d1fa',
     borderWidth: 1,
   },
   flashText: {
-    color: '#0c5460',
+    color: '#1a237e',
     textAlign: 'center',
-    fontWeight: '500',
+    fontWeight: '700',
+    fontSize: 15,
+    letterSpacing: 0.2,
+  },
+  buttonRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 20,
+    gap: 9,
+  },
+  btnPrimary: {
+    backgroundColor: '#228B22',
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    borderRadius: 12,
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 6,
+    shadowColor: '#1a237e',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.18,
+    shadowRadius: 10,
+    elevation: 3,
+  },
+  btnSecondary: {
+    backgroundColor: '#FF0000',
+    paddingVertical: 13,
+    paddingHorizontal: 20,
+    borderRadius: 12,
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 6,
+  },
+  btnEdit: {
+    backgroundColor: '#1a237e',
+    paddingVertical: 13,
+    paddingHorizontal: 20,
+    borderRadius: 12,
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center'
+  },
+  btnText: {
+    color: '#fff',
+    fontWeight: '700',
+    fontSize: 16,
+    letterSpacing: 0.2,
+    textAlign: 'center'
   },
 });
