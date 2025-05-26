@@ -120,6 +120,7 @@ export default function Navigation({ onLogout }: { onLogout: () => void }) {
         {rol === 'ADMINISTRATIVO' && (
           <>
             <Tab.Screen name="Dashboard" component={PanelAdministrativoScreen} />
+            <Tab.Screen name="Lista de candidaturas" component={ListaCandidaturaScreen} />
           </>
         )}
         <Tab.Screen name="Resulados" component={ResultadosVotacionesScreen} />
