@@ -6,14 +6,14 @@ import {
   StyleSheet,
   Alert,
   Platform,
-  FlatList,
   TouchableOpacity,
   ScrollView,
+  ImageBackground,
+  KeyboardAvoidingView,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import bcrypt from 'bcryptjs';
 import { supabase } from '../lib/supabase';
-import { LinearGradient } from 'expo-linear-gradient';
 import { Picker } from '@react-native-picker/picker';
 
 // Tipado de usuario
@@ -38,10 +38,7 @@ export default function UserManagementScreen() {
       const usuario = await AsyncStorage.getItem('usuario');
       if (usuario) {
         const parsed = JSON.parse(usuario);
-        console.log('Usuario cargado:', parsed); // <-- Agrega esto
         setAdminValid(parsed.role === 'ADMIN');
-      } else {
-        console.log('No hay usuario en AsyncStorage');
       }
     };
     verificarRol();
@@ -137,11 +134,7 @@ export default function UserManagementScreen() {
   const handleDeleteUser = async (id: number) => {
     if (Platform.OS === 'web') {
       if (window.confirm('¿Estás seguro de que deseas eliminar este usuario?')) {
-        // Elimina primero los perfiles relacionados
         await supabase.from('userprofiles').delete().eq('user_id', id);
-        // Si tienes más tablas relacionadas, elimina aquí también
-
-        // Ahora elimina el usuario
         const { error } = await supabase.from('users').delete().eq('id', id);
         if (error) {
           Alert.alert('❌ Error eliminando usuario', error.message);
@@ -161,11 +154,7 @@ export default function UserManagementScreen() {
             style: 'destructive',
             onPress: async () => {
               try {
-                // Elimina primero los perfiles relacionados
                 await supabase.from('userprofiles').delete().eq('user_id', id);
-                // Si tienes más tablas relacionadas, elimina aquí también
-
-                // Ahora elimina el usuario
                 const { error } = await supabase.from('users').delete().eq('id', id);
                 if (error) {
                   Alert.alert('❌ Error eliminando usuario', error.message);
@@ -186,112 +175,135 @@ export default function UserManagementScreen() {
   if (!adminValid) return <Text style={styles.block}>⛔ Acceso denegado</Text>;
 
   return (
-    <LinearGradient colors={['#f0f4ff', '#e6ecff']} style={{ flex: 1 }}>
-      <ScrollView contentContainerStyle={{ paddingBottom: 40 }}>
-        <View style={styles.profileCard}>
-          <View style={styles.profileHeader}>
-            <Text style={styles.headerIcon}>🧑‍💼</Text>
-            <Text style={styles.headerTitle}>Gestión de Usuarios</Text>
-          </View>
-          <View style={styles.cardBody}>
-            {/* Formulario */}
-            <Text style={styles.formLabel}>Identificación</Text>
-            <TextInput
-              placeholder="Identificación"
-              style={styles.input}
-              value={identificacion}
-              onChangeText={setIdentificacion}
-            />
-            <Text style={styles.formLabel}>Nombre de usuario</Text>
-            <TextInput
-              placeholder="Nombre de usuario"
-              style={styles.input}
-              value={username}
-              onChangeText={setUsername}
-            />
-            <Text style={styles.formLabel}>
-              Contraseña {editId ? '(dejar vacío para no cambiar)' : ''}
-            </Text>
-            <TextInput
-              placeholder="Contraseña"
-              style={styles.input}
-              value={password}
-              onChangeText={setPassword}
-              secureTextEntry
-            />
-            <Text style={styles.formLabel}>Rol del usuario:</Text>
-            <View style={{ marginBottom: 18 }}>
-              <Picker
-                selectedValue={role}
-                onValueChange={(itemValue) => setRole(itemValue as Usuario['role'])}
-                style={{ backgroundColor: '#f4f6fb', borderRadius: 10 }}
-                dropdownIconColor="#4361ee"
-              >
-                <Picker.Item label="ADMINISTRATIVO" value="ADMINISTRATIVO" />
-                <Picker.Item label="CANDIDATO" value="CANDIDATO" />
-                <Picker.Item label="VOTANTE" value="VOTANTE" />
-              </Picker>
+    <ImageBackground
+      source={require('../assets/fondo.png')}
+      style={styles.bg}
+      resizeMode="cover"
+    >
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      >
+        <ScrollView contentContainerStyle={styles.scrollContainer}>
+          <View style={styles.profileCard}>
+            <View style={styles.profileHeader}>
+              <Text style={styles.headerIcon}>🧑‍💼</Text>
+              <Text style={styles.headerTitle}>Gestión de Usuarios</Text>
             </View>
-            {editId ? (
-              <View style={{ flexDirection: 'row', gap: 10 }}>
-                <TouchableOpacity style={styles.btnPrimary} onPress={handleUpdateUser}>
-                  <Text style={styles.btnText}>Actualizar usuario</Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={styles.btnSecondary} onPress={limpiarFormulario}>
-                  <Text style={styles.btnText}>Cancelar</Text>
-                </TouchableOpacity>
-              </View>
-            ) : (
-              <TouchableOpacity style={styles.btnPrimary} onPress={handleCreateUser}>
-                <Text style={styles.btnText}>Crear usuario</Text>
-              </TouchableOpacity>
-            )}
-
-            <Text style={styles.sectionTitle}>📋 Usuarios registrados:</Text>
-
-            {/* Lista de usuarios */}
-            {usuarios.length === 0 ? (
-              <Text style={{ textAlign: 'center', color: '#888', marginTop: 10 }}>
-                No hay usuarios registrados.
+            <View style={styles.cardBody}>
+              {/* Formulario */}
+              <Text style={styles.formLabel}>Identificación</Text>
+              <TextInput
+                placeholder="Identificación"
+                style={styles.input}
+                value={identificacion}
+                onChangeText={setIdentificacion}
+                placeholderTextColor="#b0b6c1"
+              />
+              <Text style={styles.formLabel}>Nombre de usuario</Text>
+              <TextInput
+                placeholder="Nombre de usuario"
+                style={styles.input}
+                value={username}
+                onChangeText={setUsername}
+                placeholderTextColor="#b0b6c1"
+              />
+              <Text style={styles.formLabel}>
+                Contraseña {editId ? '(dejar vacío para no cambiar)' : ''}
               </Text>
-            ) : (
-              usuarios.map((item) => (
-                <View key={item.id} style={styles.userRow}>
-                  <View>
-                    <Text style={styles.userText}>🆔 {item.identificacion}</Text>
-                    <Text style={styles.userText}>🧑‍💼 {item.username}</Text>
-                    <Text style={styles.userText}>🎓 {item.role}</Text>
-                  </View>
-                  <View style={styles.userActions}>
-                    <TouchableOpacity style={styles.editBtn} onPress={() => handleEditUser(item)}>
-                      <Text style={styles.actionText}>Editar</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity style={styles.deleteBtn} onPress={() => handleDeleteUser(item.id)}>
-                      <Text style={styles.actionText}>Eliminar</Text>
-                    </TouchableOpacity>
-                  </View>
+              <TextInput
+                placeholder="Contraseña"
+                style={styles.input}
+                value={password}
+                onChangeText={setPassword}
+                secureTextEntry
+                placeholderTextColor="#b0b6c1"
+              />
+              <Text style={styles.formLabel}>Rol del usuario:</Text>
+              <View style={styles.pickerWrapper}>
+                <Picker
+                  selectedValue={role}
+                  onValueChange={(itemValue) => setRole(itemValue as Usuario['role'])}
+                  style={styles.picker}
+                  dropdownIconColor="#4361ee"
+                >
+                  <Picker.Item label="ADMINISTRATIVO" value="ADMINISTRATIVO" />
+                  <Picker.Item label="CANDIDATO" value="CANDIDATO" />
+                  <Picker.Item label="VOTANTE" value="VOTANTE" />
+                </Picker>
+              </View>
+              {editId ? (
+                <View style={styles.btnRow}>
+                  <TouchableOpacity style={styles.btnPrimary} onPress={handleUpdateUser}>
+                    <Text style={styles.btnText}>Actualizar usuario</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity style={styles.btnSecondary} onPress={limpiarFormulario}>
+                    <Text style={styles.btnText}>Cancelar</Text>
+                  </TouchableOpacity>
                 </View>
-              ))
-            )}
+              ) : (
+                <TouchableOpacity style={styles.btnPrimary} onPress={handleCreateUser}>
+                  <Text style={styles.btnText}>Crear usuario</Text>
+                </TouchableOpacity>
+              )}
+
+              <Text style={styles.sectionTitle}>📋 Usuarios registrados:</Text>
+
+              {/* Lista de usuarios */}
+              {usuarios.length === 0 ? (
+                <Text style={styles.noUsersText}>
+                  No hay usuarios registrados.
+                </Text>
+              ) : (
+                usuarios.map((item) => (
+                  <View key={item.id} style={styles.userRow}>
+                    <View>
+                      <Text style={styles.userText}>🆔 {item.identificacion}</Text>
+                      <Text style={styles.userText}>🧑‍💼 {item.username}</Text>
+                      <Text style={styles.userText}>🎓 {item.role}</Text>
+                    </View>
+                    <View style={styles.userActions}>
+                      <TouchableOpacity style={styles.editBtn} onPress={() => handleEditUser(item)}>
+                        <Text style={styles.actionText}>Editar</Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity style={styles.deleteBtn} onPress={() => handleDeleteUser(item.id)}>
+                        <Text style={styles.actionText}>Eliminar</Text>
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+                ))
+              )}
+            </View>
           </View>
-        </View>
-      </ScrollView>
-    </LinearGradient>
+        </ScrollView>
+      </KeyboardAvoidingView>
+    </ImageBackground>
   );
 }
 
 const styles = StyleSheet.create({
-  // ...tus estilos previos...
+  bg: {
+    flex: 1,
+    width: '100%',
+    height: '100%',
+  },
+  scrollContainer: {
+    flexGrow: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 32,
+    paddingHorizontal: 8,
+  },
   profileCard: {
     maxWidth: 850,
     width: '98%',
     alignSelf: 'center',
     marginTop: 40,
-    backgroundColor: '#fff',
-    borderRadius: 16,
+    backgroundColor: 'rgba(255,255,255,0.97)',
+    borderRadius: 20,
     shadowColor: '#4361ee',
     shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.15,
+    shadowOpacity: 0.18,
     shadowRadius: 30,
     elevation: 10,
     borderWidth: 1,
@@ -303,11 +315,13 @@ const styles = StyleSheet.create({
     backgroundColor: '#3434e6',
     paddingVertical: 32,
     paddingHorizontal: 32,
-    borderTopLeftRadius: 16,
-    borderTopRightRadius: 16,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
+    borderBottomWidth: 2,
+    borderBottomColor: '#eaf1fb',
   },
   headerTitle: {
     color: '#fff',
@@ -331,46 +345,43 @@ const styles = StyleSheet.create({
   formLabel: {
     fontWeight: '600',
     fontSize: 16,
-    color: '#3a3a3a',
+    color: '#343a40',
     marginBottom: 8,
     marginTop: 10,
+    letterSpacing: 0.2,
   },
   input: {
     backgroundColor: '#f4f6fb',
     padding: 14,
-    borderRadius: 10,
+    borderRadius: 12,
     marginBottom: 10,
     borderWidth: 1.5,
     borderColor: '#ced4da',
     fontSize: 16,
     color: '#212529',
+    shadowColor: '#eaf1fb',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 4,
+    elevation: 1,
   },
-  pickerRow: {
-    flexDirection: 'row',
-    justifyContent: 'flex-start',
-    gap: 10,
-    marginBottom: 18,
-  },
-  roleBtn: {
-    backgroundColor: '#e6ecff',
-    borderRadius: 10,
-    paddingVertical: 10,
-    paddingHorizontal: 18,
+  pickerWrapper: {
+    backgroundColor: '#f4f6fb',
+    borderRadius: 12,
     borderWidth: 1.5,
     borderColor: '#ced4da',
-    marginRight: 8,
+    marginBottom: 18,
+    overflow: 'hidden',
   },
-  roleBtnActive: {
-    backgroundColor: '#4361ee',
-    borderColor: '#4361ee',
-  },
-  roleBtnText: {
+  picker: {
+    height: 48,
+    width: '100%',
     color: '#263159',
-    fontWeight: '600',
-    fontSize: 15,
   },
-  roleBtnTextActive: {
-    color: '#fff',
+  btnRow: {
+    flexDirection: 'row',
+    gap: 10,
+    marginBottom: 10,
   },
   btnPrimary: {
     backgroundColor: '#4361ee',
@@ -401,6 +412,7 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     fontSize: 17,
     textAlign: 'center',
+    letterSpacing: 0.5,
   },
   sectionTitle: {
     fontSize: 20,
@@ -412,10 +424,19 @@ const styles = StyleSheet.create({
     marginBottom: 18,
     marginTop: 10,
     userSelect: 'none',
+    backgroundColor: 'rgba(232, 240, 254, 0.7)',
+    borderRadius: 8,
+  },
+  noUsersText: {
+    textAlign: 'center',
+    color: '#888',
+    marginTop: 10,
+    fontSize: 16,
+    fontStyle: 'italic',
   },
   userRow: {
-    backgroundColor: '#f8fafc',
-    borderRadius: 10,
+    backgroundColor: 'rgba(248,250,252,0.95)',
+    borderRadius: 12,
     padding: 16,
     marginBottom: 10,
     borderWidth: 1,
@@ -431,20 +452,26 @@ const styles = StyleSheet.create({
   },
   userActions: {
     flexDirection: 'row',
-    gap: 8,
+    alignItems: 'center',
+    justifyContent: 'flex-end',
+    flexShrink: 0,
+    flexWrap: 'wrap',
+    gap: 6,
   },
   editBtn: {
     backgroundColor: '#4895ef',
     borderRadius: 8,
     paddingVertical: 6,
     paddingHorizontal: 14,
-    marginRight: 6,
+    marginRight: 0,
+    marginBottom: 4,
   },
   deleteBtn: {
     backgroundColor: '#ef476f',
     borderRadius: 8,
     paddingVertical: 6,
     paddingHorizontal: 14,
+    marginBottom: 4,
   },
   actionText: {
     color: '#fff',
@@ -456,6 +483,7 @@ const styles = StyleSheet.create({
     fontSize: 15,
     color: '#263159',
     fontWeight: '500',
+    marginBottom: 2,
   },
   block: {
     padding: 20,

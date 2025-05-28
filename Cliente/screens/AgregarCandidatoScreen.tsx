@@ -9,6 +9,8 @@ import {
     Platform,
     Alert,
     FlatList,
+    ImageBackground,
+    ScrollView,
 } from 'react-native';
 import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 import { Picker } from '@react-native-picker/picker';
@@ -179,143 +181,96 @@ export default function AgregarCandidatoScreen() {
     }
 
     return (
-        <View style={{ flex: 1, backgroundColor: '#e9ecef' }}>
-            <View style={styles.container}>
-                <Text style={styles.title}>
-                    {editandoId ? 'Editar Candidatura' : 'Asignar Candidato a Elección'}
-                </Text>
-                <View style={styles.formCard}>
-                    <Text style={styles.label}>Selecciona un candidato:</Text>
-                    <View style={styles.pickerContainer}>
-                        <Picker
-                            selectedValue={selectedUser}
-                            onValueChange={setSelectedUser}
-                            style={styles.picker}
-                            enabled={!editandoId} // No permitir cambiar candidato al editar
-                        >
-                            <Picker.Item label="Selecciona un candidato" value="" />
-                            {usuarios.map((user: any) => (
-                                <Picker.Item key={user.id} label={user.username} value={user.id.toString()} />
-                            ))}
-                        </Picker>
-                    </View>
-                    <Text style={styles.label}>Selecciona una elección:</Text>
-                    <View style={styles.pickerContainer}>
-                        <Picker
-                            selectedValue={selectedEleccion}
-                            onValueChange={setSelectedEleccion}
-                            style={styles.picker}
-                            enabled={!editandoId} // No permitir cambiar elección al editar
-                        >
-                            <Picker.Item label="Selecciona una elección" value="" />
-                            {elecciones.map((eleccion: any) => (
-                                <Picker.Item key={eleccion.id} label={eleccion.nombre} value={eleccion.id.toString()} />
-                            ))}
-                        </Picker>
-                    </View>
-                    <Text style={styles.label}>Propuesta del candidato:</Text>
-                    <TextInput
-                        style={styles.input}
-                        placeholder="Escribe la propuesta"
-                        value={propuesta}
-                        onChangeText={setPropuesta}
-                        multiline
-                    />
-                    <View style={{ flexDirection: 'row', marginTop: 8 }}>
-                        <TouchableOpacity
-                            style={[
-                                styles.btnAgregar,
-                                { backgroundColor: editandoId ? '#198754' : '#0d6efd' },
-                            ]}
-                            onPress={handleAgregarOActualizar}
-                            disabled={submitting}
-                        >
-                            {editandoId ? (
-                                <MaterialIcons name="check" size={20} color="#fff" />
-                            ) : (
-                                <Ionicons name="person-add-outline" size={20} color="#fff" />
-                            )}
-                            <Text style={styles.btnAgregarText}>
-                                {submitting
-                                    ? editandoId
-                                        ? 'Actualizando...'
-                                        : 'Agregando...'
-                                    : editandoId
-                                    ? 'Actualizar'
-                                    : 'Asignar candidato'}
-                            </Text>
-                        </TouchableOpacity>
-                        {editandoId && (
+        <ImageBackground
+            source={require('../assets/fondo.png')}
+            style={styles.bg}
+            resizeMode="cover"
+        >
+            <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
+                <View style={styles.container}>
+                    <Text style={styles.title}>
+                        {editandoId ? 'Editar Candidatura' : 'Asignar Candidato a Elección'}
+                    </Text>
+                    <View style={styles.formCard}>
+                        <Text style={styles.label}>Selecciona un candidato:</Text>
+                        <View style={styles.pickerContainer}>
+                            <Picker
+                                selectedValue={selectedUser}
+                                onValueChange={setSelectedUser}
+                                style={styles.picker}
+                                enabled={!editandoId}
+                            >
+                                <Picker.Item label="Selecciona un candidato" value="" />
+                                {usuarios.map((user: any) => (
+                                    <Picker.Item key={user.id} label={user.username} value={user.id.toString()} />
+                                ))}
+                            </Picker>
+                        </View>
+                        <Text style={styles.label}>Selecciona una elección:</Text>
+                        <View style={styles.pickerContainer}>
+                            <Picker
+                                selectedValue={selectedEleccion}
+                                onValueChange={setSelectedEleccion}
+                                style={styles.picker}
+                                enabled={!editandoId}
+                            >
+                                <Picker.Item label="Selecciona una elección" value="" />
+                                {elecciones.map((eleccion: any) => (
+                                    <Picker.Item key={eleccion.id} label={eleccion.nombre} value={eleccion.id.toString()} />
+                                ))}
+                            </Picker>
+                        </View>
+                        <Text style={styles.label}>Propuesta del candidato:</Text>
+                        <TextInput
+                            style={styles.input}
+                            placeholder="Escribe la propuesta"
+                            value={propuesta}
+                            onChangeText={setPropuesta}
+                            multiline
+                        />
+                        <View style={{ flexDirection: 'row', marginTop: 8 }}>
                             <TouchableOpacity
                                 style={[
                                     styles.btnAgregar,
-                                    { backgroundColor: '#dc3545', marginLeft: 8 },
+                                    { backgroundColor: editandoId ? '#198754' : '#0d6efd' },
                                 ]}
-                                onPress={limpiarFormulario}
+                                onPress={handleAgregarOActualizar}
+                                disabled={submitting}
                             >
-                                <MaterialIcons name="close" size={20} color="#fff" />
-                                <Text style={styles.btnAgregarText}>Cancelar</Text>
+                                {editandoId ? (
+                                    <MaterialIcons name="check" size={20} color="#fff" />
+                                ) : (
+                                    <Ionicons name="person-add-outline" size={20} color="#fff" />
+                                )}
+                                <Text style={styles.btnAgregarText}>
+                                    {submitting
+                                        ? editandoId
+                                            ? 'Actualizando...'
+                                            : 'Agregando...'
+                                        : editandoId
+                                        ? 'Actualizar'
+                                        : 'Asignar candidato'}
+                                </Text>
                             </TouchableOpacity>
-                        )}
-                    </View>
-                </View>
-
-                <Text style={[styles.title, { fontSize: 20, marginTop: 24 }]}>
-                    Candidaturas registradas
-                </Text>
-                <FlatList
-                    data={candidaturas}
-                    keyExtractor={item => item.id.toString()}
-                    renderItem={({ item }) => {
-                        const usuario = usuarios.find(u => u.id === item.userid);
-                        const eleccion = elecciones.find(e => e.id === item.eleccionid);
-
-                        return (
-                            <View style={styles.candidaturaCard}>
-                                <Text style={{ color: '#495057', fontSize: 13, marginBottom: 4 }}>
-                                    Candidato:{' '}
-                                    <Text style={{ fontWeight: 'bold' }}>
-                                        {usuario ? usuario.username : 'Desconocido'}
-                                    </Text>{' '}
-                                    | Elección:{' '}
-                                    <Text style={{ fontWeight: 'bold' }}>
-                                        {eleccion ? eleccion.nombre : 'Desconocida'}
-                                    </Text>
-                                </Text>
-                                <Text style={{ fontWeight: 'bold', color: '#0d6efd' }}>
-                                    Propuesta:
-                                </Text>
-                                <Text>{item.propuesta}</Text>
-                                <View
-                                    style={{
-                                        flexDirection: 'row',
-                                        marginTop: 8,
-                                        justifyContent: 'flex-end',
-                                    }}
+                            {editandoId && (
+                                <TouchableOpacity
+                                    style={[
+                                        styles.btnAgregar,
+                                        { backgroundColor: '#dc3545', marginLeft: 8 },
+                                    ]}
+                                    onPress={limpiarFormulario}
                                 >
-                                    <TouchableOpacity
-                                        style={[
-                                            styles.actionBtn,
-                                            { backgroundColor: '#0d6efd' },
-                                        ]}
-                                        onPress={() => iniciarEdicion(item)}
-                                    >
-                                        <MaterialIcons name="edit" size={18} color="#fff" />
-                                    </TouchableOpacity>
-                                    <TouchableOpacity
-                                        style={[
-                                            styles.actionBtn,
-                                            { backgroundColor: '#dc3545', marginLeft: 8 },
-                                        ]}
-                                        onPress={() => handleEliminar(item.id)}
-                                    >
-                                        <MaterialIcons name="delete" size={18} color="#fff" />
-                                    </TouchableOpacity>
-                                </View>
-                            </View>
-                        );
-                    }}
-                    ListEmptyComponent={
+                                    <MaterialIcons name="close" size={20} color="#fff" />
+                                    <Text style={styles.btnAgregarText}>Cancelar</Text>
+                                </TouchableOpacity>
+                            )}
+                        </View>
+                    </View>
+
+                    <Text style={[styles.title, { fontSize: 20, marginTop: 24 }]}>
+                        Candidaturas registradas
+                    </Text>
+                    {candidaturas.length === 0 ? (
                         <Text
                             style={{
                                 textAlign: 'center',
@@ -325,19 +280,72 @@ export default function AgregarCandidatoScreen() {
                         >
                             No hay candidaturas registradas.
                         </Text>
-                    }
-                    style={{ marginTop: 10 }}
-                />
-            </View>
-        </View>
+                    ) : (
+                        candidaturas.map((item) => {
+                            const usuario = usuarios.find(u => u.id === item.userid);
+                            const eleccion = elecciones.find(e => e.id === item.eleccionid);
+
+                            return (
+                                <View style={styles.candidaturaCard} key={item.id}>
+                                    <Text style={{ color: '#495057', fontSize: 13, marginBottom: 4 }}>
+                                        Candidato:{' '}
+                                        <Text style={{ fontWeight: 'bold' }}>
+                                            {usuario ? usuario.username : 'Desconocido'}
+                                        </Text>{' '}
+                                        | Elección:{' '}
+                                        <Text style={{ fontWeight: 'bold' }}>
+                                            {eleccion ? eleccion.nombre : 'Desconocida'}
+                                        </Text>
+                                    </Text>
+                                    <Text style={{ fontWeight: 'bold', color: '#0d6efd' }}>
+                                        Propuesta:
+                                    </Text>
+                                    <Text>{item.propuesta}</Text>
+                                    <View
+                                        style={{
+                                            flexDirection: 'row',
+                                            marginTop: 8,
+                                            justifyContent: 'flex-end',
+                                        }}
+                                    >
+                                        <TouchableOpacity
+                                            style={[
+                                                styles.actionBtn,
+                                                { backgroundColor: '#0d6efd' },
+                                            ]}
+                                            onPress={() => iniciarEdicion(item)}
+                                        >
+                                            <MaterialIcons name="edit" size={18} color="#fff" />
+                                        </TouchableOpacity>
+                                        <TouchableOpacity
+                                            style={[
+                                                styles.actionBtn,
+                                                { backgroundColor: '#dc3545', marginLeft: 8 },
+                                            ]}
+                                            onPress={() => handleEliminar(item.id)}
+                                        >
+                                            <MaterialIcons name="delete" size={18} color="#fff" />
+                                        </TouchableOpacity>
+                                    </View>
+                                </View>
+                            );
+                        })
+                    )}
+                </View>
+            </ScrollView>
+        </ImageBackground>
     );
 }
 
 const styles = StyleSheet.create({
-    container: {
+    bg: {
         flex: 1,
+        width: '100%',
+        height: '100%',
+    },
+    container: {
         padding: 18,
-        backgroundColor: '#e9ecef',
+        backgroundColor: 'transparent',
     },
     formCard: {
         backgroundColor: '#fff',

@@ -10,6 +10,7 @@ import {
     TextInput,
     Platform,
     Animated,
+    ImageBackground,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Picker } from '@react-native-picker/picker';
@@ -56,7 +57,6 @@ export default function EditarEleccionesScreen() {
 
     const handleEliminar = (id: number) => {
         if (Platform.OS === 'web') {
-            // En web, elimina directamente o usa window.confirm
             if (window.confirm('¿Estás seguro de que deseas eliminar esta elección?')) {
                 eliminarEleccion(id);
             }
@@ -79,7 +79,6 @@ export default function EditarEleccionesScreen() {
     const eliminarEleccion = async (id: number) => {
         Alert.alert('Intentando eliminar elección con id:', String(id));
         const { error } = await supabase.from('eleccions').delete().eq('id', id);
-        console.log('Eliminar resultado:', error);
         if (error) {
             Alert.alert('Error', error.message);
         } else {
@@ -104,7 +103,6 @@ export default function EditarEleccionesScreen() {
             Alert.alert('Completa todos los campos obligatorios');
             return;
         }
-        // Ajuste de fechas para web
         const fechaInicioStr =
             Platform.OS === 'web'
                 ? form.fecha_inicio.getFullYear() +
@@ -175,6 +173,7 @@ export default function EditarEleccionesScreen() {
                             selectedValue={form.tipo_representacion}
                             onValueChange={v => setForm({ ...form, tipo_representacion: v })}
                             style={styles.picker}
+                            dropdownIconColor="#4361ee"
                         >
                             <Picker.Item label="Facultad" value="facultad" />
                             <Picker.Item label="Semestre" value="semestre" />
@@ -252,6 +251,7 @@ export default function EditarEleccionesScreen() {
                             selectedValue={form.estado}
                             onValueChange={v => setForm({ ...form, estado: v })}
                             style={styles.picker}
+                            dropdownIconColor="#4361ee"
                         >
                             <Picker.Item label="Activa" value="activa" />
                             <Picker.Item label="Finalizada" value="finalizada" />
@@ -271,7 +271,6 @@ export default function EditarEleccionesScreen() {
                 </View>
             );
         }
-        // Tarjeta normal
         return (
             <View style={styles.card}>
                 <View style={styles.headerRow}>
@@ -280,15 +279,15 @@ export default function EditarEleccionesScreen() {
                 </View>
                 <Text style={styles.descripcion}>{item.descripcion}</Text>
                 <View style={styles.infoRow}>
-                    <Ionicons name="people-outline" size={18} color="#0d6efd" />
+                    <Ionicons name="people-outline" size={18} color="#4361ee" />
                     <Text style={styles.info}>Tipo: {item.tipo_representacion}</Text>
                 </View>
                 <View style={styles.infoRow}>
-                    <Ionicons name="calendar-outline" size={18} color="#0d6efd" />
+                    <Ionicons name="calendar-outline" size={18} color="#4361ee" />
                     <Text style={styles.info}>Inicio: {new Date(item.fecha_inicio).toLocaleString()}</Text>
                 </View>
                 <View style={styles.infoRow}>
-                    <Ionicons name="calendar-outline" size={18} color="#ff4d6d" />
+                    <Ionicons name="calendar-outline" size={18} color="#ef476f" />
                     <Text style={styles.info}>Fin: {new Date(item.fecha_fin).toLocaleString()}</Text>
                 </View>
                 <View style={styles.infoRow}>
@@ -318,99 +317,128 @@ export default function EditarEleccionesScreen() {
     if (loading) {
         return (
             <View style={styles.centered}>
-                <ActivityIndicator size="large" color="#0d6efd" />
+                <ActivityIndicator size="large" color="#4361ee" />
             </View>
         );
     }
 
     return (
-        <View style={styles.container}>
-            <Text style={styles.title}>🗳️ Elecciones Disponibles</Text>
-            {successMsg ? (
-                <Animated.View style={[styles.successMsg, { opacity: fadeAnim }]}>
-                    <Text style={styles.successText}>{successMsg}</Text>
-                </Animated.View>
-            ) : null}
-            <FlatList
-                data={elecciones}
-                keyExtractor={item => item.id.toString()}
-                renderItem={renderItem}
-                ListEmptyComponent={
-                    <Text style={{ textAlign: 'center', marginTop: 40, color: '#888', fontSize: 16 }}>
-                        No hay elecciones registradas.
-                    </Text>
-                }
-                contentContainerStyle={{ paddingBottom: 30 }}
-            />
-        </View>
+        <ImageBackground
+            source={require('../assets/fondo.png')}
+            style={styles.bg}
+            resizeMode="cover"
+        >
+            <View style={styles.container}>
+                <Text style={styles.title}>🗳️ Elecciones Disponibles</Text>
+                {successMsg ? (
+                    <Animated.View style={[styles.successMsg, { opacity: fadeAnim }]}>
+                        <Text style={styles.successText}>{successMsg}</Text>
+                    </Animated.View>
+                ) : null}
+                <FlatList
+                    data={elecciones}
+                    keyExtractor={item => item.id.toString()}
+                    renderItem={renderItem}
+                    numColumns={2}
+                    ListEmptyComponent={
+                        <Text style={styles.emptyText}>
+                            No hay elecciones registradas.
+                        </Text>
+                    }
+                    contentContainerStyle={styles.flatListContent}
+                />
+            </View>
+        </ImageBackground>
     );
 }
 
 const styles = StyleSheet.create({
+    bg: {
+        flex: 1,
+        width: '100%',
+        height: '100%',
+    },
     container: {
         flex: 1,
-        backgroundColor: '#f8f9fa',
-        padding: 16,
+        padding: 18,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    flatListContent: {
+        paddingBottom: 30,
+        paddingHorizontal: 4,
+        alignItems: 'flex-start',
     },
     title: {
-        fontSize: 28,
-        fontWeight: '700',
-        color: '#2c3e50',
+        fontSize: 30,
+        fontWeight: '800',
+        color: '#3434e6',
         marginBottom: 24,
         textAlign: 'center',
         letterSpacing: 0.5,
+        textShadowColor: 'rgba(52,52,230,0.08)',
+        textShadowOffset: { width: 0, height: 2 },
+        textShadowRadius: 6,
     },
     card: {
-        backgroundColor: '#fff',
-        borderRadius: 12,
-        padding: 22,
-        marginBottom: 18,
-        shadowColor: '#0d6efd',
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.08,
-        shadowRadius: 12,
-        elevation: 3,
-        borderLeftWidth: 6,
-        borderLeftColor: '#0d6efd',
+        backgroundColor: 'rgba(255,255,255,0.97)',
+        borderRadius: 18,
+        padding: 20,
+        marginBottom: 16,
+        marginHorizontal: 4,
+        shadowColor: '#4361ee',
+        shadowOffset: { width: 0, height: 8 },
+        shadowOpacity: 0.13,
+        shadowRadius: 18,
+        elevation: 7,
+        borderLeftWidth: 7,
+        borderLeftColor: '#4361ee',
+        width: '47%',
+        minWidth: 200,
+        maxWidth: 340,
     },
     cardEdit: {
-        backgroundColor: '#e9f2ff',
-        borderRadius: 12,
-        padding: 22,
-        marginBottom: 18,
-        borderLeftWidth: 6,
+        backgroundColor: 'rgba(232,240,254,0.98)',
+        borderRadius: 18,
+        padding: 20,
+        marginBottom: 16,
+        marginHorizontal: 4,
+        borderLeftWidth: 7,
         borderLeftColor: '#ffd60a',
         shadowColor: '#ffd60a',
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.08,
-        shadowRadius: 12,
-        elevation: 3,
+        shadowOffset: { width: 0, height: 8 },
+        shadowOpacity: 0.13,
+        shadowRadius: 18,
+        elevation: 7,
+        width: '47%',
+        minWidth: 200,
+        maxWidth: 340,
     },
     headerRow: {
         flexDirection: 'row',
         alignItems: 'center',
-        marginBottom: 6,
+        marginBottom: 8,
     },
     nombre: {
-        fontSize: 20,
-        fontWeight: '700',
-        color: '#2c3e50',
+        fontSize: 21,
+        fontWeight: '800',
+        color: '#343a40',
         flex: 1,
         flexWrap: 'wrap',
     },
     descripcion: {
         color: '#555',
-        marginBottom: 8,
+        marginBottom: 10,
         fontStyle: 'italic',
         fontSize: 15,
     },
     infoRow: {
         flexDirection: 'row',
         alignItems: 'center',
-        marginBottom: 2,
+        marginBottom: 3,
     },
     info: {
-        color: '#0d6efd',
+        color: '#4361ee',
         fontSize: 15,
         marginLeft: 7,
         fontWeight: '600',
@@ -418,40 +446,41 @@ const styles = StyleSheet.create({
     actions: {
         flexDirection: 'row',
         justifyContent: 'flex-end',
-        marginTop: 14,
+        marginTop: 16,
+        gap: 8,
     },
     btnEdit: {
-        backgroundColor: '#0d6efd',
-        borderRadius: 6,
-        paddingVertical: 8,
-        paddingHorizontal: 18,
-        marginRight: 8,
+        backgroundColor: '#4361ee',
+        borderRadius: 8,
+        paddingVertical: 10,
+        paddingHorizontal: 22,
+        marginRight: 6,
         flexDirection: 'row',
         alignItems: 'center',
-        shadowColor: '#0d6efd',
+        shadowColor: '#4361ee',
         shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.10,
-        shadowRadius: 4,
+        shadowOpacity: 0.13,
+        shadowRadius: 6,
         elevation: 2,
     },
     btnDelete: {
-        backgroundColor: '#ff4d6d',
-        borderRadius: 6,
-        paddingVertical: 8,
-        paddingHorizontal: 18,
+        backgroundColor: '#ef476f',
+        borderRadius: 8,
+        paddingVertical: 10,
+        paddingHorizontal: 22,
         flexDirection: 'row',
         alignItems: 'center',
-        shadowColor: '#ff4d6d',
+        shadowColor: '#ef476f',
         shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.10,
-        shadowRadius: 4,
+        shadowOpacity: 0.13,
+        shadowRadius: 6,
         elevation: 2,
     },
     btnText: {
         color: '#fff',
         fontWeight: '700',
-        fontSize: 15,
-        marginLeft: 6,
+        fontSize: 16,
+        marginLeft: 8,
     },
     centered: {
         flex: 1,
@@ -459,19 +488,24 @@ const styles = StyleSheet.create({
         alignItems: 'center',
     },
     input: {
-        backgroundColor: '#fff',
-        padding: 12,
-        borderRadius: 6,
+        backgroundColor: '#f4f6fb',
+        padding: 14,
+        borderRadius: 10,
         marginBottom: 10,
-        borderWidth: 1.2,
+        borderWidth: 1.5,
         borderColor: '#ced4da',
-        fontSize: 15,
-        color: '#2c3e50',
+        fontSize: 16,
+        color: '#212529',
+        shadowColor: '#eaf1fb',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.08,
+        shadowRadius: 4,
+        elevation: 1,
     },
     pickerContainer: {
-        backgroundColor: '#fff',
-        borderRadius: 6,
-        borderWidth: 1.2,
+        backgroundColor: '#f4f6fb',
+        borderRadius: 10,
+        borderWidth: 1.5,
         borderColor: '#ced4da',
         marginBottom: 10,
         overflow: 'hidden',
@@ -479,26 +513,35 @@ const styles = StyleSheet.create({
     picker: {
         width: '100%',
         height: 48,
-        color: '#2c3e50',
+        color: '#263159',
     },
     label: {
         fontWeight: '700',
         fontSize: 15,
-        color: '#2c3e50',
+        color: '#343a40',
         marginBottom: 4,
-        marginTop: 8,
+        marginTop: 10,
     },
     successMsg: {
         backgroundColor: '#d1f7c4',
-        borderRadius: 8,
+        borderRadius: 10,
         padding: 14,
         marginBottom: 18,
         alignItems: 'center',
+        borderWidth: 1,
+        borderColor: '#b6e6a7',
     },
     successText: {
         color: '#218838',
         fontWeight: '700',
         fontSize: 16,
         textAlign: 'center',
+    },
+    emptyText: {
+        textAlign: 'center',
+        marginTop: 40,
+        color: '#888',
+        fontSize: 16,
+        fontStyle: 'italic',
     },
 });
