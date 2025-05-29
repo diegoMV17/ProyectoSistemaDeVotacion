@@ -2,6 +2,7 @@
 
 ## Instalación inicial
 npm install
+
 npm install -g expo-cli
 npx create-expo-app mi-proyecto-expo-ts -t expo-template-blank-typescript
 cd mi-proyecto-expo-ts
