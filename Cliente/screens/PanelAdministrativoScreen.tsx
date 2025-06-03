@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Platform, ImageBa
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 
-export default function PanelAdministrativoScreen() {
+export default function AdministrativePanelScreen() {
     const navigation = useNavigation();
 
     const actions = [
@@ -82,7 +82,7 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         alignItems: 'center',
         paddingVertical: 32,
-        paddingHorizontal: 12, // Añade padding lateral
+        paddingHorizontal: 12,
     },
     dashboardContainer: {
         width: '100%',
@@ -103,7 +103,7 @@ const styles = StyleSheet.create({
         width: '100%',
         flexDirection: 'column',
         gap: 18,
-        alignItems: 'center', // Centra los botones
+        alignItems: 'center',
     },
     actionCard: {
         backgroundColor: '#f7fafd',
@@ -112,7 +112,7 @@ const styles = StyleSheet.create({
         paddingHorizontal: 18,
         alignItems: 'center',
         marginBottom: 18,
-        width: '100%', // Ocupa casi todo el ancho
+        width: '100%',
         alignSelf: 'center',
         shadowOffset: { width: 0, height: 4 },
         shadowOpacity: 0.13,

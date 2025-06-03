@@ -14,39 +14,39 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '../lib/supabase';
 
-export default function ListaCandidaturasScreen() {
-    const [elecciones, setElecciones] = useState<any[]>([]);
+export default function CandidateListScreen() {
+    const [elections, setElections] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [modalVisible, setModalVisible] = useState(false);
-    const [eleccionSeleccionada, setEleccionSeleccionada] = useState<any>(null);
-    const [candidaturas, setCandidaturas] = useState<any[]>([]);
+    const [selectedElection, setSelectedElection] = useState<any>(null);
+    const [candidacies, setCandidacies] = useState<any[]>([]);
 
     useEffect(() => {
-        cargarElecciones();
+        loadElections();
     }, []);
 
-    const cargarElecciones = async () => {
+    const loadElections = async () => {
         setLoading(true);
         const { data, error } = await supabase
             .from('eleccions')
             .select('*')
             .order('fecha_inicio', { ascending: false });
-        if (!error) setElecciones(data || []);
+        if (!error) setElections(data || []);
         setLoading(false);
     };
 
-    const cargarCandidaturas = async (eleccionId: number) => {
+    const loadCandidacies = async (electionId: number) => {
         const { data, error } = await supabase
             .from('candidaturas')
             .select('id, propuesta, users(username)')
-            .eq('eleccionid', eleccionId);
-        if (!error) setCandidaturas(data || []);
-        else setCandidaturas([]);
+            .eq('eleccionid', electionId);
+        if (!error) setCandidacies(data || []);
+        else setCandidacies([]);
     };
 
-    const handleSeleccion = async (eleccion: any) => {
-        setEleccionSeleccionada(eleccion);
-        await cargarCandidaturas(eleccion.id);
+    const handleSelect = async (election: any) => {
+        setSelectedElection(election);
+        await loadCandidacies(election.id);
         setModalVisible(true);
     };
 
@@ -67,18 +67,18 @@ export default function ListaCandidaturasScreen() {
         >
             <View style={styles.container}>
                 <Text style={styles.title}>Candidaturas por Elección</Text>
-                <Text style={styles.subtitle}>Total elecciones: {elecciones.length}</Text>
+                <Text style={styles.subtitle}>Total elecciones: {elections.length}</Text>
                 <FlatList
-                    data={elecciones}
+                    data={elections}
                     keyExtractor={(item) => item.id.toString()}
                     renderItem={({ item }) => (
-                        <TouchableOpacity onPress={() => handleSeleccion(item)} style={styles.touchable}>
+                        <TouchableOpacity onPress={() => handleSelect(item)} style={styles.touchable}>
                             <View style={styles.card}>
                                 <View style={styles.cardHeader}>
                                     <Ionicons name="school" size={22} color="#4f8cff" style={{ marginRight: 8 }} />
-                                    <Text style={styles.eleccion}>{item.nombre || 'Sin nombre'}</Text>
+                                    <Text style={styles.election}>{item.nombre || 'Sin nombre'}</Text>
                                 </View>
-                                <Text style={styles.descripcion}>
+                                <Text style={styles.description}>
                                     <Ionicons name="document-text-outline" size={16} color="#4f8cff" />{' '}
                                     {item.descripcion || 'Sin descripción'}
                                 </Text>
@@ -110,20 +110,20 @@ export default function ListaCandidaturasScreen() {
                         <View style={styles.modalContent}>
                             <Text style={styles.modalTitle}>
                                 <Ionicons name="people-circle-outline" size={22} color="#4f8cff" />{' '}
-                                Candidaturas de: <Text style={{ color: '#4f8cff' }}>{eleccionSeleccionada?.nombre}</Text>
+                                Candidaturas de: <Text style={{ color: '#4f8cff' }}>{selectedElection?.nombre}</Text>
                             </Text>
                             <ScrollView style={{ maxHeight: 250, width: '100%', marginTop: 10 }}>
-                                {candidaturas.length === 0 && (
+                                {candidacies.length === 0 && (
                                     <Text style={{ color: '#888', textAlign: 'center' }}>No hay candidaturas registradas.</Text>
                                 )}
-                                {candidaturas.map((cand: any) => (
+                                {candidacies.map((cand: any) => (
                                     <View
                                         key={cand.id}
-                                        style={styles.candidaturaItem}
+                                        style={styles.candidacyItem}
                                     >
                                         <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 2 }}>
                                             <Ionicons name="person" size={16} color="#4f8cff" />
-                                            <Text style={styles.candidatoNombre}>
+                                            <Text style={styles.candidateName}>
                                                 {cand.userprofiles?.nombres
                                                     ? `${cand.userprofiles.nombres} ${cand.userprofiles.apellidos}`
                                                     : cand.users?.username
@@ -133,14 +133,14 @@ export default function ListaCandidaturasScreen() {
                                         </View>
                                         <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                                             <Ionicons name="bulb-outline" size={14} color="#4f8cff" />
-                                            <Text style={styles.candidatoPropuesta}>{cand.propuesta}</Text>
+                                            <Text style={styles.candidateProposal}>{cand.propuesta}</Text>
                                         </View>
                                     </View>
                                 ))}
                             </ScrollView>
                             <View style={{ marginTop: 16 }}>
-                                <Pressable onPress={() => setModalVisible(false)} style={styles.btnCerrar}>
-                                    <Text style={styles.btnCerrarText}>Cerrar</Text>
+                                <Pressable onPress={() => setModalVisible(false)} style={styles.btnClose}>
+                                    <Text style={styles.btnCloseText}>Cerrar</Text>
                                 </Pressable>
                             </View>
                         </View>
@@ -217,12 +217,12 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         marginBottom: 8,
     },
-    eleccion: {
+    election: {
         fontSize: 20,
         fontWeight: 'bold',
         color: '#4f8cff',
     },
-    descripcion: {
+    description: {
         fontSize: 15,
         color: '#333',
         marginTop: 2,
@@ -285,7 +285,7 @@ const styles = StyleSheet.create({
         color: '#4f8cff',
         textAlign: 'center',
     },
-    candidaturaItem: {
+    candidacyItem: {
         padding: 14,
         borderRadius: 12,
         backgroundColor: '#eaf1ff',
@@ -295,19 +295,19 @@ const styles = StyleSheet.create({
         borderLeftColor: '#4f8cff',
         width: '100%',
     },
-    candidatoNombre: {
+    candidateName: {
         color: '#263159',
         fontWeight: 'bold',
         fontSize: 15,
         marginLeft: 6,
     },
-    candidatoPropuesta: {
+    candidateProposal: {
         color: '#222',
         fontSize: 14,
         marginLeft: 6,
         marginTop: 2,
     },
-    btnCerrar: {
+    btnClose: {
         padding: 14,
         backgroundColor: '#4f8cff',
         borderRadius: 10,
@@ -315,7 +315,7 @@ const styles = StyleSheet.create({
         minWidth: 120,
         marginTop: 8,
     },
-    btnCerrarText: {
+    btnCloseText: {
         color: '#fff',
         fontWeight: 'bold',
         fontSize: 16,

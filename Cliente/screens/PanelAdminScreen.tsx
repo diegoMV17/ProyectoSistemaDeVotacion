@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Platform, ImageBa
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 
-export default function PanelAdminScreen() {
+export default function AdminPanelScreen() {
     const navigation = useNavigation();
 
     const actions = [
@@ -53,7 +53,6 @@ export default function PanelAdminScreen() {
         >
             <ScrollView contentContainerStyle={styles.scrollContainer}>
                 <View style={styles.dashboardContainer}>
-                    {/* Logo institucional vectorial */}
                     <View style={styles.logoContainer}>
                         <Ionicons name="school" size={80} color="#3498db" />
                     </View>
@@ -66,7 +65,7 @@ export default function PanelAdminScreen() {
                         </View>
                     </View>
                     <View style={styles.actionsContainer}>
-                        {actions.map((action, idx) => (
+                        {actions.map((action) => (
                             <TouchableOpacity
                                 key={action.label}
                                 style={[

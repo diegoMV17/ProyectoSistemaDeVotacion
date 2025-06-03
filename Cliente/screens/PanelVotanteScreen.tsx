@@ -4,7 +4,7 @@ import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '../lib/supabase';
 
-export default function PanelVotanteScreen() {
+export default function VoterPanelScreen() {
     const navigation = useNavigation();
     console.log('Usuario actual:', supabase.auth.user);
 

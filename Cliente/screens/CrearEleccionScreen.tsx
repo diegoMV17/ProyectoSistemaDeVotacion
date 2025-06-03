@@ -15,21 +15,21 @@ import { Picker } from '@react-native-picker/picker';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { supabase } from '../lib/supabase';
 
-export default function CrearEleccionScreen() {
-  const [nombre, setNombre] = useState('');
-  const [descripcion, setDescripcion] = useState('');
-  const [tipoRepresentacion, setTipoRepresentacion] = useState('facultad');
-  const [fechaInicio, setFechaInicio] = useState<Date | null>(null);
-  const [fechaFin, setFechaFin] = useState<Date | null>(null);
-  const [estado, setEstado] = useState('programada');
-  const [showInicio, setShowInicio] = useState(false);
-  const [showFin, setShowFin] = useState(false);
+export default function CreateElectionScreen() {
+  const [name, setName] = useState('');
+  const [description, setDescription] = useState('');
+  const [representationType, setRepresentationType] = useState('facultad');
+  const [startDate, setStartDate] = useState<Date | null>(null);
+  const [endDate, setEndDate] = useState<Date | null>(null);
+  const [status, setStatus] = useState('programada');
+  const [showStart, setShowStart] = useState(false);
+  const [showEnd, setShowEnd] = useState(false);
   const [successMsg, setSuccessMsg] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
   const fadeAnim = useState(new Animated.Value(0))[0];
   const errorAnim = useState(new Animated.Value(0))[0];
 
-  const mostrarMensaje = (msg: string) => {
+  const showMessage = (msg: string) => {
     setSuccessMsg(msg);
     Animated.timing(fadeAnim, {
       toValue: 1,
@@ -46,7 +46,7 @@ export default function CrearEleccionScreen() {
     });
   };
 
-  const mostrarError = (msg: string) => {
+  const showError = (msg: string) => {
     setErrorMsg(msg);
     Animated.timing(errorAnim, {
       toValue: 1,
@@ -63,31 +63,31 @@ export default function CrearEleccionScreen() {
     });
   };
 
-  const handleCrear = async () => {
-    if (!nombre || !tipoRepresentacion || !fechaInicio || !fechaFin || !estado) {
-      mostrarError('Completa todos los campos obligatorios');
+  const handleCreate = async () => {
+    if (!name || !representationType || !startDate || !endDate || !status) {
+      showError('Completa todos los campos obligatorios');
       return;
     }
 
     try {
       const { error } = await supabase.from('eleccions').insert([{
-        nombre,
-        descripcion,
-        tipo_representacion: tipoRepresentacion,
-        fecha_inicio: fechaInicio.toISOString(),
-        fecha_fin: fechaFin.toISOString(),
-        estado,
+        nombre: name,
+        descripcion: description,
+        tipo_representacion: representationType,
+        fecha_inicio: startDate.toISOString(),
+        fecha_fin: endDate.toISOString(),
+        estado: status,
       }]);
       if (error) {
         Alert.alert('Error', error.message);
       } else {
-        mostrarMensaje('✅ ¡Elección registrada exitosamente!');
-        setNombre('');
-        setDescripcion('');
-        setTipoRepresentacion('facultad');
-        setFechaInicio(null);
-        setFechaFin(null);
-        setEstado('programada');
+        showMessage('✅ ¡Elección registrada exitosamente!');
+        setName('');
+        setDescription('');
+        setRepresentationType('facultad');
+        setStartDate(null);
+        setEndDate(null);
+        setStatus('programada');
       }
     } catch (e: any) {
       Alert.alert('Error', e.message || 'No se pudo crear la elección');
@@ -119,8 +119,8 @@ export default function CrearEleccionScreen() {
           <Text style={styles.label}>Nombre *</Text>
           <TextInput
             style={styles.input}
-            value={nombre}
-            onChangeText={setNombre}
+            value={name}
+            onChangeText={setName}
             placeholder="Nombre de la elección"
             placeholderTextColor="#b0b6c1"
           />
@@ -128,8 +128,8 @@ export default function CrearEleccionScreen() {
           <Text style={styles.label}>Descripción</Text>
           <TextInput
             style={[styles.input, { height: 80 }]}
-            value={descripcion}
-            onChangeText={setDescripcion}
+            value={description}
+            onChangeText={setDescription}
             placeholder="Descripción"
             placeholderTextColor="#b0b6c1"
             multiline
@@ -138,8 +138,8 @@ export default function CrearEleccionScreen() {
           <Text style={styles.label}>Tipo de Representación *</Text>
           <View style={styles.pickerContainer}>
             <Picker
-              selectedValue={tipoRepresentacion}
-              onValueChange={setTipoRepresentacion}
+              selectedValue={representationType}
+              onValueChange={setRepresentationType}
               style={styles.picker}
               dropdownIconColor="#4361ee"
             >
@@ -154,29 +154,29 @@ export default function CrearEleccionScreen() {
             <input
               type="datetime-local"
               style={{ ...styles.input, padding: 10, fontSize: 15 }}
-              value={fechaInicio ? fechaInicio.toISOString().slice(0, 16) : ''}
-              onChange={e => setFechaInicio(e.target.value ? new Date(e.target.value) : null)}
+              value={startDate ? startDate.toISOString().slice(0, 16) : ''}
+              onChange={e => setStartDate(e.target.value ? new Date(e.target.value) : null)}
             />
           ) : (
             <>
               <TouchableOpacity
                 style={styles.input}
-                onPress={() => setShowInicio(true)}
+                onPress={() => setShowStart(true)}
               >
-                <Text style={{ color: fechaInicio ? '#263159' : '#888' }}>
-                  {fechaInicio
-                    ? fechaInicio.toLocaleString()
+                <Text style={{ color: startDate ? '#263159' : '#888' }}>
+                  {startDate
+                    ? startDate.toLocaleString()
                     : 'Selecciona fecha y hora de inicio'}
                 </Text>
               </TouchableOpacity>
-              {showInicio && (
+              {showStart && (
                 <DateTimePicker
-                  value={fechaInicio || new Date()}
+                  value={startDate || new Date()}
                   mode="datetime"
                   display="default"
                   onChange={(_, date) => {
-                    setShowInicio(false);
-                    if (date) setFechaInicio(date);
+                    setShowStart(false);
+                    if (date) setStartDate(date);
                   }}
                 />
               )}
@@ -188,29 +188,29 @@ export default function CrearEleccionScreen() {
             <input
               type="datetime-local"
               style={{ ...styles.input, padding: 10, fontSize: 15 }}
-              value={fechaFin ? fechaFin.toISOString().slice(0, 16) : ''}
-              onChange={e => setFechaFin(e.target.value ? new Date(e.target.value) : null)}
+              value={endDate ? endDate.toISOString().slice(0, 16) : ''}
+              onChange={e => setEndDate(e.target.value ? new Date(e.target.value) : null)}
             />
           ) : (
             <>
               <TouchableOpacity
                 style={styles.input}
-                onPress={() => setShowFin(true)}
+                onPress={() => setShowEnd(true)}
               >
-                <Text style={{ color: fechaFin ? '#263159' : '#888' }}>
-                  {fechaFin
-                    ? fechaFin.toLocaleString()
+                <Text style={{ color: endDate ? '#263159' : '#888' }}>
+                  {endDate
+                    ? endDate.toLocaleString()
                     : 'Selecciona fecha y hora de fin'}
                 </Text>
               </TouchableOpacity>
-              {showFin && (
+              {showEnd && (
                 <DateTimePicker
-                  value={fechaFin || new Date()}
+                  value={endDate || new Date()}
                   mode="datetime"
                   display="default"
                   onChange={(_, date) => {
-                    setShowFin(false);
-                    if (date) setFechaFin(date);
+                    setShowEnd(false);
+                    if (date) setEndDate(date);
                   }}
                 />
               )}
@@ -220,8 +220,8 @@ export default function CrearEleccionScreen() {
           <Text style={styles.label}>Estado *</Text>
           <View style={styles.pickerContainer}>
             <Picker
-              selectedValue={estado}
-              onValueChange={setEstado}
+              selectedValue={status}
+              onValueChange={setStatus}
               style={styles.picker}
               dropdownIconColor="#4361ee"
             >
@@ -231,7 +231,7 @@ export default function CrearEleccionScreen() {
             </Picker>
           </View>
 
-          <TouchableOpacity style={styles.btnPrimary} onPress={handleCrear}>
+          <TouchableOpacity style={styles.btnPrimary} onPress={handleCreate}>
             <Text style={styles.btnText}>Registrar Elección</Text>
           </TouchableOpacity>
         </View>
@@ -241,6 +241,7 @@ export default function CrearEleccionScreen() {
 }
 
 const styles = StyleSheet.create({
+  // ...los estilos permanecen igual...
   bg: {
     flex: 1,
     width: '100%',

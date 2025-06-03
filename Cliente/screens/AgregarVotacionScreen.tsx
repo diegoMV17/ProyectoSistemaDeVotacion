@@ -17,114 +17,113 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 
-export default function AgregarVotacionScreen() {
-    const [elecciones, setElecciones] = useState<any[]>([]);
+export default function AddVoteScreen() {
+    const [elections, setElections] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [modalVisible, setModalVisible] = useState(false);
-    const [eleccionSeleccionada, setEleccionSeleccionada] = useState<any>(null);
-    const [candidaturas, setCandidaturas] = useState<any[]>([]);
-    const [candidaturaSeleccionada, setCandidaturaSeleccionada] = useState<any>(null);
-    const [votando, setVotando] = useState(false);
+    const [selectedElection, setSelectedElection] = useState<any>(null);
+    const [candidacies, setCandidacies] = useState<any[]>([]);
+    const [selectedCandidacy, setSelectedCandidacy] = useState<any>(null);
+    const [voting, setVoting] = useState(false);
 
-    // Solo se puede votar en una elección en todo el sistema
-    const [yaVotoEnAlguna, setYaVotoEnAlguna] = useState(false);
+    // Only allow voting in one election in the whole system
+    const [alreadyVoted, setAlreadyVoted] = useState(false);
 
-    const [userid, setUserId] = useState<number | null>(null);
+    const [userId, setUserId] = useState<number | null>(null);
     const navigation = useNavigation();
 
     useEffect(() => {
         AsyncStorage.getItem('usuario').then((json: string | null) => {
             if (json) {
-                const usuario = JSON.parse(json);
-                setUserId(usuario.id);
-                verificarSiYaVotoEnAlguna(usuario.id);
+                const user = JSON.parse(json);
+                setUserId(user.id);
+                checkIfAlreadyVoted(user.id);
             }
         });
-        cargarElecciones();
+        loadElections();
     }, []);
 
-    // Solo cargar elecciones activas
-    const cargarElecciones = async () => {
+    // Load only active elections
+    const loadElections = async () => {
         setLoading(true);
         const { data, error } = await supabase
             .from('eleccions')
             .select('*')
             .eq('estado', 'activa')
             .order('fecha_inicio', { ascending: false });
-        if (!error) setElecciones(data || []);
+        if (!error) setElections(data || []);
         setLoading(false);
     };
 
-    // Cargar solo candidaturas activas (requiere campo estado en candidaturas)
-    const cargarCandidaturas = async (eleccionId: number) => {
+    // Load only active candidacies (requires estado field in candidaturas)
+    const loadCandidacies = async (electionId: number) => {
         const { data, error } = await supabase
             .from('candidaturas')
             .select('id, propuesta, userid, users(username)')
-            .eq('eleccionid', eleccionId);
-        // Si tu tabla candidaturas NO tiene campo estado, elimina el filtro
-        if (!error) setCandidaturas(data || []);
-        else setCandidaturas([]);
+            .eq('eleccionid', electionId);
+        if (!error) setCandidacies(data || []);
+        else setCandidacies([]);
     };
 
-    // Verifica si el usuario ya votó en alguna elección
-    const verificarSiYaVotoEnAlguna = async (userId: number) => {
+    // Check if the user has already voted in any election
+    const checkIfAlreadyVoted = async (userId: number) => {
         const { data } = await supabase
             .from('votos')
             .select('id')
             .eq('userid', userId)
             .maybeSingle();
-        setYaVotoEnAlguna(!!data);
+        setAlreadyVoted(!!data);
     };
 
-    // Solo permite votar si la elección está activa
-    const handleSeleccion = async (eleccion: any) => {
-        if (eleccion.estado !== 'activa') {
+    // Only allow voting if the election is active
+    const handleSelectElection = async (election: any) => {
+        if (election.estado !== 'activa') {
             Alert.alert('No disponible', 'Solo puedes votar en elecciones activas.');
             return;
         }
-        setEleccionSeleccionada(eleccion);
-        setCandidaturaSeleccionada(null);
-        if (!yaVotoEnAlguna) {
-            await cargarCandidaturas(eleccion.id);
+        setSelectedElection(election);
+        setSelectedCandidacy(null);
+        if (!alreadyVoted) {
+            await loadCandidacies(election.id);
         }
         setModalVisible(true);
     };
 
-    const guardarVoto = async () => {
-        if (yaVotoEnAlguna) {
+    const saveVote = async () => {
+        if (alreadyVoted) {
             return;
         }
-        if (!userid) {
+        if (!userId) {
             Alert.alert('Error', 'No se encontró el usuario en sesión');
             return;
         }
-        if (!eleccionSeleccionada || !eleccionSeleccionada.id) {
+        if (!selectedElection || !selectedElection.id) {
             Alert.alert('Error', 'No se seleccionó una elección');
             return;
         }
-        if (!candidaturaSeleccionada || !candidaturaSeleccionada.id) {
+        if (!selectedCandidacy || !selectedCandidacy.id) {
             Alert.alert('Error', 'Debes seleccionar una candidatura');
             return;
         }
 
-        setVotando(true);
+        setVoting(true);
         const { error } = await supabase.from('votos').insert([
             {
-                userid,
-                eleccionid: eleccionSeleccionada.id,
-                candidaturaid: candidaturaSeleccionada.id,
+                userid: userId,
+                eleccionid: selectedElection.id,
+                candidaturaid: selectedCandidacy.id,
             },
         ]);
-        setVotando(false);
+        setVoting(false);
 
         if (error) {
             Alert.alert('Error', 'No se pudo guardar el voto');
         } else {
             Alert.alert('Éxito', '¡Voto guardado!');
-            setYaVotoEnAlguna(true);
+            setAlreadyVoted(true);
             setModalVisible(false);
-            setCandidaturaSeleccionada(null);
-            setEleccionSeleccionada(null);
+            setSelectedCandidacy(null);
+            setSelectedElection(null);
         }
     };
 
@@ -149,21 +148,21 @@ export default function AgregarVotacionScreen() {
                         <Ionicons name="school" size={64} color="#3498db" />
                     </View>
                     <Text style={styles.title}>Votaciones Disponibles</Text>
-                    <Text style={styles.subtitle}>Total elecciones: {elecciones.length}</Text>
+                    <Text style={styles.subtitle}>Total elecciones: {elections.length}</Text>
                     <FlatList
-                        data={elecciones}
+                        data={elections}
                         keyExtractor={(item) => item.id.toString()}
                         renderItem={({ item }) => (
                             <TouchableOpacity
-                                onPress={() => handleSeleccion(item)}
+                                onPress={() => handleSelectElection(item)}
                                 style={[
                                     styles.touchable,
-                                    yaVotoEnAlguna && { opacity: 0.6 }
+                                    alreadyVoted && { opacity: 0.6 }
                                 ]}
-                                disabled={yaVotoEnAlguna}
+                                disabled={alreadyVoted}
                             >
                                 <View style={styles.card}>
-                                    <Text style={styles.eleccion}>
+                                    <Text style={styles.election}>
                                         <Ionicons name="balloon-outline" size={20} color="#3a0ca3" /> {item.nombre || 'Sin nombre'}
                                     </Text>
                                     <Text style={styles.descripcion}>{item.descripcion || 'Sin descripción'}</Text>
@@ -187,9 +186,9 @@ export default function AgregarVotacionScreen() {
                         <View style={styles.modalOverlay}>
                             <View style={styles.modalContent}>
                                 <Text style={styles.modalTitle}>
-                                    <Ionicons name="balloon-outline" size={22} color="#4361ee" /> Votar en: <Text style={{ color: '#4361ee' }}>{eleccionSeleccionada?.nombre}</Text>
+                                    <Ionicons name="balloon-outline" size={22} color="#4361ee" /> Votar en: <Text style={{ color: '#4361ee' }}>{selectedElection?.nombre}</Text>
                                 </Text>
-                                {yaVotoEnAlguna ? (
+                                {alreadyVoted ? (
                                     <>
                                         <Text style={{ color: '#e74c3c', fontWeight: 'bold', marginVertical: 20, textAlign: 'center' }}>
                                             Ya has votado en una elección. Solo puedes votar una vez.
@@ -210,26 +209,26 @@ export default function AgregarVotacionScreen() {
                                     <>
                                         <Text style={styles.modalSubtitle}>Selecciona una candidatura:</Text>
                                         <ScrollView style={{ maxHeight: 200, width: '100%', marginTop: 10 }}>
-                                            {candidaturas.length === 0 && (
+                                            {candidacies.length === 0 && (
                                                 <Text style={{ color: '#888', textAlign: 'center' }}>No hay candidaturas disponibles.</Text>
                                             )}
-                                            {candidaturas.map((cand: any) => (
+                                            {candidacies.map((cand: any) => (
                                                 <Pressable
                                                     key={cand.id}
-                                                    onPress={() => setCandidaturaSeleccionada(cand)}
+                                                    onPress={() => setSelectedCandidacy(cand)}
                                                     style={[
                                                         styles.candidaturaItem,
-                                                        candidaturaSeleccionada?.id === cand.id && styles.candidaturaItemSelected
+                                                        selectedCandidacy?.id === cand.id && styles.candidaturaItemSelected
                                                     ]}
                                                 >
                                                     <Text style={{
-                                                        color: candidaturaSeleccionada?.id === cand.id ? '#fff' : '#22223b',
+                                                        color: selectedCandidacy?.id === cand.id ? '#fff' : '#22223b',
                                                         fontWeight: 'bold'
                                                     }}>
                                                         {cand.users?.username || 'Candidato desconocido'}
                                                     </Text>
                                                     <Text style={{
-                                                        color: candidaturaSeleccionada?.id === cand.id ? '#fff' : '#555',
+                                                        color: selectedCandidacy?.id === cand.id ? '#fff' : '#555',
                                                         fontSize: 13,
                                                         marginTop: 2
                                                     }}>
@@ -245,12 +244,12 @@ export default function AgregarVotacionScreen() {
                                             <TouchableOpacity
                                                 style={[
                                                     styles.btnVotar,
-                                                    (!candidaturaSeleccionada || votando) && { opacity: 0.6 }
+                                                    (!selectedCandidacy || voting) && { opacity: 0.6 }
                                                 ]}
-                                                onPress={guardarVoto}
-                                                disabled={!candidaturaSeleccionada || votando}
+                                                onPress={saveVote}
+                                                disabled={!selectedCandidacy || voting}
                                             >
-                                                <Text style={styles.btnVotarText}>{votando ? "Guardando..." : "Votar"}</Text>
+                                                <Text style={styles.btnVotarText}>{voting ? "Guardando..." : "Votar"}</Text>
                                             </TouchableOpacity>
                                         </View>
                                     </>
@@ -337,7 +336,7 @@ const styles = StyleSheet.create({
         borderLeftWidth: 5,
         borderLeftColor: '#4361ee',
     },
-    eleccion: {
+    election: {
         fontSize: 18,
         fontWeight: 'bold',
         color: '#3a0ca3',

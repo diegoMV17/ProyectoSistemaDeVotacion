@@ -16,8 +16,8 @@ import bcrypt from 'bcryptjs';
 import { supabase } from '../lib/supabase';
 import { Picker } from '@react-native-picker/picker';
 
-// Tipado de usuario
-type Usuario = {
+// User type
+type User = {
   id: number;
   identificacion: string;
   username: string;
@@ -25,55 +25,55 @@ type Usuario = {
 };
 
 export default function UserManagementScreen() {
-  const [identificacion, setIdentificacion] = useState('');
+  const [identification, setIdentification] = useState('');
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
-  const [role, setRole] = useState<Usuario['role']>('ADMINISTRATIVO');
+  const [role, setRole] = useState<User['role']>('ADMINISTRATIVO');
   const [adminValid, setAdminValid] = useState(false);
-  const [usuarios, setUsuarios] = useState<Usuario[]>([]);
+  const [users, setUsers] = useState<User[]>([]);
   const [editId, setEditId] = useState<number | null>(null);
 
   useEffect(() => {
-    const verificarRol = async () => {
-      const usuario = await AsyncStorage.getItem('usuario');
-      if (usuario) {
-        const parsed = JSON.parse(usuario);
+    const verifyRole = async () => {
+      const user = await AsyncStorage.getItem('usuario');
+      if (user) {
+        const parsed = JSON.parse(user);
         setAdminValid(parsed.role === 'ADMIN');
       }
     };
-    verificarRol();
+    verifyRole();
   }, []);
 
-  const cargarUsuarios = async () => {
+  const loadUsers = async () => {
     const { data, error } = await supabase.from('users').select('id, identificacion, username, role');
     if (!error && data) {
-      setUsuarios(data as Usuario[]);
+      setUsers(data as User[]);
     }
   };
 
   useEffect(() => {
     if (adminValid) {
-      cargarUsuarios();
+      loadUsers();
     }
   }, [adminValid]);
 
-  const limpiarFormulario = () => {
+  const clearForm = () => {
     setEditId(null);
-    setIdentificacion('');
+    setIdentification('');
     setUsername('');
     setPassword('');
     setRole('ADMINISTRATIVO');
   };
 
   const handleCreateUser = async () => {
-    if (!identificacion || !username || !password || !role) {
+    if (!identification || !username || !password || !role) {
       Alert.alert('⚠️ Todos los campos son obligatorios');
       return;
     }
     try {
       const hashed = await bcrypt.hash(password, 10);
       const { error } = await supabase.from('users').insert([{
-        identificacion,
+        identificacion: identification,
         username,
         password_hash: hashed,
         role,
@@ -82,8 +82,8 @@ export default function UserManagementScreen() {
         Alert.alert('❌ Error creando usuario', error.message);
       } else {
         Alert.alert('✅ Usuario creado exitosamente');
-        limpiarFormulario();
-        cargarUsuarios();
+        clearForm();
+        loadUsers();
       }
     } catch (e) {
       Alert.alert('❌ Error general', 'No se pudo crear el usuario');
@@ -91,22 +91,22 @@ export default function UserManagementScreen() {
     }
   };
 
-  const handleEditUser = (usuario: Usuario) => {
-    setEditId(usuario.id);
-    setIdentificacion(usuario.identificacion);
-    setUsername(usuario.username);
-    setRole(usuario.role);
+  const handleEditUser = (user: User) => {
+    setEditId(user.id);
+    setIdentification(user.identificacion);
+    setUsername(user.username);
+    setRole(user.role);
     setPassword('');
   };
 
   const handleUpdateUser = async () => {
-    if (!editId || !identificacion || !username || !role) {
+    if (!editId || !identification || !username || !role) {
       Alert.alert('⚠️ Todos los campos son obligatorios');
       return;
     }
     try {
       let updateObj: any = {
-        identificacion,
+        identificacion: identification,
         username,
         role,
       };
@@ -122,8 +122,8 @@ export default function UserManagementScreen() {
         Alert.alert('❌ Error actualizando usuario', error.message);
       } else {
         Alert.alert('✅ Usuario actualizado');
-        limpiarFormulario();
-        cargarUsuarios();
+        clearForm();
+        loadUsers();
       }
     } catch (e) {
       Alert.alert('❌ Error general', 'No se pudo actualizar el usuario');
@@ -139,8 +139,8 @@ export default function UserManagementScreen() {
         if (error) {
           Alert.alert('❌ Error eliminando usuario', error.message);
         } else {
-          if (editId === id) limpiarFormulario();
-          cargarUsuarios();
+          if (editId === id) clearForm();
+          loadUsers();
         }
       }
     } else {
@@ -159,8 +159,8 @@ export default function UserManagementScreen() {
                 if (error) {
                   Alert.alert('❌ Error eliminando usuario', error.message);
                 } else {
-                  if (editId === id) limpiarFormulario();
-                  cargarUsuarios();
+                  if (editId === id) clearForm();
+                  loadUsers();
                 }
               } catch (e: any) {
                 Alert.alert('❌ Error eliminando usuario', e.message || 'Error desconocido');
@@ -196,8 +196,8 @@ export default function UserManagementScreen() {
               <TextInput
                 placeholder="Identificación"
                 style={styles.input}
-                value={identificacion}
-                onChangeText={setIdentificacion}
+                value={identification}
+                onChangeText={setIdentification}
                 placeholderTextColor="#b0b6c1"
               />
               <Text style={styles.formLabel}>Nombre de usuario</Text>
@@ -223,7 +223,7 @@ export default function UserManagementScreen() {
               <View style={styles.pickerWrapper}>
                 <Picker
                   selectedValue={role}
-                  onValueChange={(itemValue) => setRole(itemValue as Usuario['role'])}
+                  onValueChange={(itemValue) => setRole(itemValue as User['role'])}
                   style={styles.picker}
                   dropdownIconColor="#4361ee"
                 >
@@ -237,7 +237,7 @@ export default function UserManagementScreen() {
                   <TouchableOpacity style={styles.btnPrimary} onPress={handleUpdateUser}>
                     <Text style={styles.btnText}>Actualizar usuario</Text>
                   </TouchableOpacity>
-                  <TouchableOpacity style={styles.btnSecondary} onPress={limpiarFormulario}>
+                  <TouchableOpacity style={styles.btnSecondary} onPress={clearForm}>
                     <Text style={styles.btnText}>Cancelar</Text>
                   </TouchableOpacity>
                 </View>
@@ -250,12 +250,12 @@ export default function UserManagementScreen() {
               <Text style={styles.sectionTitle}>📋 Usuarios registrados:</Text>
 
               {/* Lista de usuarios */}
-              {usuarios.length === 0 ? (
+              {users.length === 0 ? (
                 <Text style={styles.noUsersText}>
                   No hay usuarios registrados.
                 </Text>
               ) : (
-                usuarios.map((item) => (
+                users.map((item) => (
                   <View key={item.id} style={styles.userRow}>
                     <View>
                       <Text style={styles.userText}>🆔 {item.identificacion}</Text>

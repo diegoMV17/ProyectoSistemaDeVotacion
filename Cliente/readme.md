@@ -1,5 +1,8 @@
 # Guía para crear una aplicación con Expo y TypeScript
 
+# Repositorio GitHub
+https://github.com/diegoMV17/ProyectoSistemaDeVotacion
+
 ## Instalación inicial
 npm install
 
@@ -82,3 +85,4 @@ expo start --clear
 * Alternativas para entornos de producción:
 
   npm install react-native-quick-crypto
+

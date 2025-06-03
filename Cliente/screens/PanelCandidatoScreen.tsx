@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Platform, ImageBa
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 
-export default function PanelCandidatoScreen() {
+export default function CandidatePanelScreen() {
     const navigation = useNavigation();
 
     const actions = [
@@ -35,7 +35,6 @@ export default function PanelCandidatoScreen() {
         >
             <ScrollView contentContainerStyle={styles.scrollContainer}>
                 <View style={styles.dashboardContainer}>
-                    {/* Logo institucional vectorial */}
                     <View style={styles.logoContainer}>
                         <Ionicons name="school" size={80} color="#3498db" />
                     </View>

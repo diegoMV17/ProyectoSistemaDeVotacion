@@ -14,59 +14,59 @@ import { Picker } from '@react-native-picker/picker';
 import { supabase } from '../lib/supabase';
 
 export default function ProfileScreen() {
-  const [nombres, setNombres] = useState('');
-  const [apellidos, setApellidos] = useState('');
-  const [edad, setEdad] = useState('');
-  const [genero, setGenero] = useState('');
-  const [mensajeExito, setMensajeExito] = useState('');
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
+  const [age, setAge] = useState('');
+  const [gender, setGender] = useState('');
+  const [successMessage, setSuccessMessage] = useState('');
   const [userId, setUserId] = useState<number | null>(null);
 
   useEffect(() => {
     AsyncStorage.getItem('usuario').then(json => {
       if (json) {
-        const usuario = JSON.parse(json);
-        setUserId(usuario.id);
+        const user = JSON.parse(json);
+        setUserId(user.id);
       }
     });
   }, []);
 
-  const guardarPerfilEnBD = async () => {
-    if (!userId || !nombres || !apellidos || !edad || !genero) {
+  const saveProfileToDB = async () => {
+    if (!userId || !firstName || !lastName || !age || !gender) {
       Alert.alert('Campos incompletos', 'Por favor completa todos los campos.');
       return;
     }
     try {
-      const { data: existentes, error: errorSelect } = await supabase
+      const { data: existingProfiles, error: selectError } = await supabase
         .from('userprofiles')
         .select('id')
         .eq('user_id', userId);
 
-      if (errorSelect) {
-        console.error('Error buscando perfil:', errorSelect);
-        throw errorSelect;
+      if (selectError) {
+        console.error('Error buscando perfil:', selectError);
+        throw selectError;
       }
 
       let error;
-      if (existentes && existentes.length > 0) {
-        const idPerfil = existentes[0].id;
+      if (existingProfiles && existingProfiles.length > 0) {
+        const profileId = existingProfiles[0].id;
         ({ error } = await supabase
           .from('userprofiles')
           .update({
-            nombres,
-            apellidos,
-            edad: parseInt(edad, 10),
-            genero,
+            nombres: firstName,
+            apellidos: lastName,
+            edad: parseInt(age, 10),
+            genero: gender,
           })
-          .eq('id', idPerfil));
+          .eq('id', profileId));
       } else {
         ({ error } = await supabase
           .from('userprofiles')
           .insert([{
             user_id: userId,
-            nombres,
-            apellidos,
-            edad: parseInt(edad, 10),
-            genero,
+            nombres: firstName,
+            apellidos: lastName,
+            edad: parseInt(age, 10),
+            genero: gender,
           }]));
       }
 
@@ -74,18 +74,18 @@ export default function ProfileScreen() {
         console.error('Error de Supabase:', error);
         throw error;
       }
-      setMensajeExito('✅ Perfil guardado correctamente.');
-      setNombres('');
-      setApellidos('');
-      setEdad('');
-      setGenero('');
-      setTimeout(() => setMensajeExito(''), 3000);
+      setSuccessMessage('✅ Perfil guardado correctamente.');
+      setFirstName('');
+      setLastName('');
+      setAge('');
+      setGender('');
+      setTimeout(() => setSuccessMessage(''), 3000);
     } catch (error) {
       Alert.alert('Error', 'No se pudo guardar el perfil en la base de datos.');
     }
   };
 
-  const eliminarPerfilEnBD = async () => {
+  const deleteProfileFromDB = async () => {
     if (!userId) {
       Alert.alert('Error', 'No se encontró el usuario.');
       return;
@@ -99,18 +99,18 @@ export default function ProfileScreen() {
         console.error('Error al eliminar perfil:', error);
         throw error;
       }
-      setMensajeExito('🗑️ Perfil eliminado correctamente.');
-      setNombres('');
-      setApellidos('');
-      setEdad('');
-      setGenero('');
-      setTimeout(() => setMensajeExito(''), 3000);
+      setSuccessMessage('🗑️ Perfil eliminado correctamente.');
+      setFirstName('');
+      setLastName('');
+      setAge('');
+      setGender('');
+      setTimeout(() => setSuccessMessage(''), 3000);
     } catch (error) {
       Alert.alert('Error', 'No se pudo eliminar el perfil en la base de datos.');
     }
   };
 
-  const cargarPerfilEnBD = async () => {
+  const loadProfileFromDB = async () => {
     if (!userId) {
       Alert.alert('Error', 'No se encontró el usuario.');
       return;
@@ -127,26 +127,26 @@ export default function ProfileScreen() {
         return;
       }
 
-      const perfil = data && data.length > 0
+      const profile = data && data.length > 0
         ? data.find((p) => p.user_id === userId)
         : null;
 
-      if (!perfil) {
-        setMensajeExito('ℹ️ No hay perfil para este usuario. Puedes crearlo.');
-        setNombres('');
-        setApellidos('');
-        setEdad('');
-        setGenero('');
-        setTimeout(() => setMensajeExito(''), 3000);
+      if (!profile) {
+        setSuccessMessage('ℹ️ No hay perfil para este usuario. Puedes crearlo.');
+        setFirstName('');
+        setLastName('');
+        setAge('');
+        setGender('');
+        setTimeout(() => setSuccessMessage(''), 3000);
         return;
       }
 
-      setNombres(perfil.nombres || '');
-      setApellidos(perfil.apellidos || '');
-      setEdad(perfil.edad ? perfil.edad.toString() : '');
-      setGenero(perfil.genero || '');
-      setMensajeExito('✏️ Perfil cargado para edición.');
-      setTimeout(() => setMensajeExito(''), 3000);
+      setFirstName(profile.nombres || '');
+      setLastName(profile.apellidos || '');
+      setAge(profile.edad ? profile.edad.toString() : '');
+      setGender(profile.genero || '');
+      setSuccessMessage('✏️ Perfil cargado para edición.');
+      setTimeout(() => setSuccessMessage(''), 3000);
     } catch (error) {
       Alert.alert('Error', 'No se pudo cargar el perfil.');
     }
@@ -165,38 +165,38 @@ export default function ProfileScreen() {
             <Text style={styles.headerTitle}>Perfil del Usuario</Text>
           </View>
           <View style={styles.cardBody}>
-            {mensajeExito !== '' && (
+            {successMessage !== '' && (
               <View style={styles.flash}>
-                <Text style={styles.flashText}>{mensajeExito}</Text>
+                <Text style={styles.flashText}>{successMessage}</Text>
               </View>
             )}
             <Text style={styles.formLabel}>Nombres</Text>
             <TextInput
               placeholder="Nombres"
               style={styles.input}
-              value={nombres}
-              onChangeText={setNombres}
+              value={firstName}
+              onChangeText={setFirstName}
             />
             <Text style={styles.formLabel}>Apellidos</Text>
             <TextInput
               placeholder="Apellidos"
               style={styles.input}
-              value={apellidos}
-              onChangeText={setApellidos}
+              value={lastName}
+              onChangeText={setLastName}
             />
             <Text style={styles.formLabel}>Edad</Text>
             <TextInput
               placeholder="Edad"
               style={styles.input}
-              value={edad}
-              onChangeText={setEdad}
+              value={age}
+              onChangeText={setAge}
               keyboardType="numeric"
             />
             <Text style={styles.formLabel}>Género</Text>
             <View style={styles.pickerContainer}>
               <Picker
-                selectedValue={genero}
-                onValueChange={setGenero}
+                selectedValue={gender}
+                onValueChange={setGender}
                 style={styles.picker}
               >
                 <Picker.Item label="Selecciona género..." value="" />
@@ -206,13 +206,13 @@ export default function ProfileScreen() {
               </Picker>
             </View>
             <View style={styles.buttonRow}>
-              <TouchableOpacity style={styles.btnPrimary} onPress={guardarPerfilEnBD}>
+              <TouchableOpacity style={styles.btnPrimary} onPress={saveProfileToDB}>
                 <Text style={styles.btnText}>Guardar perfil</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={styles.btnSecondary} onPress={eliminarPerfilEnBD}>
+              <TouchableOpacity style={styles.btnSecondary} onPress={deleteProfileFromDB}>
                 <Text style={styles.btnText}>Eliminar perfil</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={styles.btnEdit} onPress={cargarPerfilEnBD}>
+              <TouchableOpacity style={styles.btnEdit} onPress={loadProfileFromDB}>
                 <Text style={styles.btnText}>Editar perfil</Text>
               </TouchableOpacity>
             </View>

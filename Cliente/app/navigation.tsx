@@ -2,9 +2,7 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { NavigationContainer } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import HomeScreen from '../screens/HomeScreen';
-import ProductScreen from '../screens/ProductScreen';
 import ProfileScreen from '../screens/ProfileScreen';
-import InventoryScreen from '../screens/InventoryScreen';
 import UserManagementScreen from '../screens/UserManagementScreen';
 import { useEffect, useState } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -88,9 +86,7 @@ export default function Navigation({ onLogout }: { onLogout: () => void }) {
           tabBarIcon: ({ color, size }) => {
             let iconName: keyof typeof Ionicons.glyphMap = 'help';
             if (route.name === 'Panel') iconName = 'home';
-            else if (route.name === 'Productos') iconName = 'pricetags';
             else if (route.name === 'Perfil') iconName = 'person';
-            else if (route.name === 'Inventario') iconName = 'cube';
             else if (route.name === 'Usuarios') iconName = 'people';
             else if (route.name === 'Crear Eleccion') iconName = 'checkbox-outline';
             else if (route.name === 'Lista Elecciones') iconName = 'create-outline';
@@ -102,11 +98,7 @@ export default function Navigation({ onLogout }: { onLogout: () => void }) {
           },
           headerRight,
         })}
-      >
-        {/* <Tab.Screen name="Inicio" component={HomeScreen} />
-        <Tab.Screen name="Productos" component={ProductScreen} /> */}
-
-        {/* <Tab.Screen name="Inventario" component={InventoryScreen} /> */}
+      >        
         {rol === 'ADMIN' && (
           <>
             <Tab.Screen name="Panel" component={PanelAdminScreen} />

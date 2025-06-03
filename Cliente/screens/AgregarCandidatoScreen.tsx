@@ -16,137 +16,134 @@ import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 import { Picker } from '@react-native-picker/picker';
 import { supabase } from '../lib/supabase';
 
-export default function AgregarCandidatoScreen() {
-    const [usuarios, setUsuarios] = useState<any[]>([]);
-    const [elecciones, setElecciones] = useState<any[]>([]);
-    const [candidaturas, setCandidaturas] = useState<any[]>([]);
-    const [selectedUser, setSelectedUser] = useState<string>('');
-    const [selectedEleccion, setSelectedEleccion] = useState<string>('');
-    const [propuesta, setPropuesta] = useState('');
-    const [loading, setLoading] = useState(true);
-    const [submitting, setSubmitting] = useState(false);
+export default function AddCandidateScreen() {
+    const [users, setUsers] = useState<any[]>([]);
+    const [elections, setElections] = useState<any[]>([]);
+    const [candidacies, setCandidacies] = useState<any[]>([]);
+    const [selectedUserId, setSelectedUserId] = useState<string>('');
+    const [selectedElectionId, setSelectedElectionId] = useState<string>('');
+    const [proposal, setProposal] = useState('');
+    const [isLoading, setIsLoading] = useState(true);
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
-    // Estados para edición
-    const [editandoId, setEditandoId] = useState<number | null>(null);
+    const [editingId, setEditingId] = useState<number | null>(null);
 
-    const cargarDatos = async () => {
-        setLoading(true);
-        const { data: users } = await supabase
+    const loadData = async () => {
+        setIsLoading(true);
+        const { data: usersData } = await supabase
             .from('users')
             .select('id, username, role')
             .eq('role', 'CANDIDATO');
-        const { data: eleccions } = await supabase
+        const { data: electionsData } = await supabase
             .from('eleccions')
             .select('id, nombre');
-        const { data: candidaturasData } = await supabase
+        const { data: candidaciesData } = await supabase
             .from('candidaturas')
             .select('id, propuesta, userid, eleccionid');
-        setUsuarios(users || []);
-        setElecciones(eleccions || []);
-        setCandidaturas(candidaturasData || []);
-        setLoading(false);
+
+        setUsers(usersData || []);
+        setElections(electionsData || []);
+        setCandidacies(candidaciesData || []);
+        setIsLoading(false);
     };
 
     useEffect(() => {
-        cargarDatos();
+        loadData();
     }, []);
 
-    // Agregar o actualizar candidatura
-    const handleAgregarOActualizar = async () => {
-        if (!selectedUser || !selectedEleccion || !propuesta.trim()) {
+    const handleSubmit = async () => {
+        if (!selectedUserId || !selectedElectionId || !proposal.trim()) {
             Alert.alert('Todos los campos son obligatorios');
             return;
         }
 
-        const userId = Number(selectedUser);
-        const eleccionId = Number(selectedEleccion);
+        const userId = Number(selectedUserId);
+        const electionId = Number(selectedElectionId);
 
-        if (isNaN(userId) || isNaN(eleccionId) || userId <= 0 || eleccionId <= 0) {
+        if (isNaN(userId) || isNaN(electionId) || userId <= 0 || electionId <= 0) {
             Alert.alert('Selecciona un candidato y una elección válidos');
             return;
         }
 
-        setSubmitting(true);
+        setIsSubmitting(true);
 
-        if (editandoId) {
-            // Actualizar candidatura existente
+        if (editingId) {
             const { error } = await supabase
                 .from('candidaturas')
-                .update({ propuesta })
-                .eq('id', editandoId);
+                .update({ propuesta: proposal })
+                .eq('id', editingId);
 
-            setSubmitting(false);
+            setIsSubmitting(false);
 
             if (error) {
                 Alert.alert('Error', 'No se pudo actualizar la candidatura.');
             } else {
                 Alert.alert('Éxito', 'Candidatura actualizada');
-                limpiarFormulario();
-                cargarDatos();
+                resetForm();
+                loadData();
             }
         } else {
-            // Verifica si ya existe la candidatura
-            const { data: existente } = await supabase
+            const { data: existing } = await supabase
                 .from('candidaturas')
                 .select('id')
                 .eq('userid', userId)
-                .eq('eleccionid', eleccionId)
+                .eq('eleccionid', electionId)
                 .maybeSingle();
 
-            if (existente) {
-                setSubmitting(false);
+            if (existing) {
+                setIsSubmitting(false);
                 Alert.alert('Este candidato ya está asignado a esta elección');
                 return;
             }
 
-            // Insertar nueva candidatura
-            const dataToInsert = {
-                propuesta,
+            const newCandidacy = {
+                propuesta: proposal,
                 userid: userId,
-                eleccionid: eleccionId,
+                eleccionid: electionId,
             };
 
-            const { error } = await supabase.from('candidaturas').insert([dataToInsert]);
+            const { error } = await supabase.from('candidaturas').insert([newCandidacy]);
 
-            setSubmitting(false);
+            setIsSubmitting(false);
 
             if (error) {
                 Alert.alert('Error', 'No se pudo registrar la candidatura. Intenta nuevamente.');
             } else {
                 Alert.alert('Éxito', 'Candidato asignado a la elección');
-                limpiarFormulario();
-                cargarDatos();
+                resetForm();
+                loadData();
             }
         }
     };
 
-    // Cargar datos de la candidatura al editar
-    const iniciarEdicion = (item: any) => {
-        setEditandoId(item.id);
-        setSelectedUser(item.userid.toString());
-        setSelectedEleccion(item.eleccionid.toString());
-        setPropuesta(item.propuesta);
+    const startEditing = (item: any) => {
+        setEditingId(item.id);
+        setSelectedUserId(item.userid.toString());
+        setSelectedElectionId(item.eleccionid.toString());
+        setProposal(item.propuesta);
     };
 
-    // Cancelar edición o limpiar formulario
-    const limpiarFormulario = () => {
-        setEditandoId(null);
-        setPropuesta('');
-        setSelectedUser('');
-        setSelectedEleccion('');
+    const resetForm = () => {
+        setEditingId(null);
+        setProposal('');
+        setSelectedUserId('');
+        setSelectedElectionId('');
     };
 
-    // Eliminar candidatura
-    const handleEliminar = async (id: number) => {
+    const handleDelete = async (id: number) => {
+        const deleteCandidacy = async () => {
+            const { error } = await supabase.from('candidaturas').delete().eq('id', id);
+            if (error) {
+                Alert.alert('Error', 'No se pudo eliminar la candidatura.');
+            } else {
+                Alert.alert('Eliminado', 'Candidatura eliminada correctamente.');
+                loadData();
+            }
+        };
+
         if (Platform.OS === 'web') {
             if (window.confirm('¿Estás seguro de que deseas eliminar esta candidatura?')) {
-                const { error } = await supabase.from('candidaturas').delete().eq('id', id);
-                if (error) {
-                    Alert.alert('Error', 'No se pudo eliminar la candidatura.');
-                } else {
-                    Alert.alert('Eliminado', 'Candidatura eliminada correctamente.');
-                    cargarDatos();
-                }
+                await deleteCandidacy();
             }
         } else {
             Alert.alert(
@@ -157,22 +154,14 @@ export default function AgregarCandidatoScreen() {
                     {
                         text: 'Eliminar',
                         style: 'destructive',
-                        onPress: async () => {
-                            const { error } = await supabase.from('candidaturas').delete().eq('id', id);
-                            if (error) {
-                                Alert.alert('Error', 'No se pudo eliminar la candidatura.');
-                            } else {
-                                Alert.alert('Eliminado', 'Candidatura eliminada correctamente.');
-                                cargarDatos();
-                            }
-                        },
+                        onPress: deleteCandidacy,
                     },
                 ]
             );
         }
     };
 
-    if (loading) {
+    if (isLoading) {
         return (
             <View style={styles.centered}>
                 <ActivityIndicator size="large" color="#0d6efd" />
@@ -181,27 +170,23 @@ export default function AgregarCandidatoScreen() {
     }
 
     return (
-        <ImageBackground
-            source={require('../assets/fondo.png')}
-            style={styles.bg}
-            resizeMode="cover"
-        >
+        <ImageBackground source={require('../assets/fondo.png')} style={styles.bg} resizeMode="cover">
             <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
                 <View style={styles.container}>
                     <Text style={styles.title}>
-                        {editandoId ? 'Editar Candidatura' : 'Asignar Candidato a Elección'}
+                        {editingId ? 'Editar Candidatura' : 'Asignar Candidato a Elección'}
                     </Text>
                     <View style={styles.formCard}>
                         <Text style={styles.label}>Selecciona un candidato:</Text>
                         <View style={styles.pickerContainer}>
                             <Picker
-                                selectedValue={selectedUser}
-                                onValueChange={setSelectedUser}
+                                selectedValue={selectedUserId}
+                                onValueChange={setSelectedUserId}
                                 style={styles.picker}
-                                enabled={!editandoId}
+                                enabled={!editingId}
                             >
                                 <Picker.Item label="Selecciona un candidato" value="" />
-                                {usuarios.map((user: any) => (
+                                {users.map((user: any) => (
                                     <Picker.Item key={user.id} label={user.username} value={user.id.toString()} />
                                 ))}
                             </Picker>
@@ -209,14 +194,14 @@ export default function AgregarCandidatoScreen() {
                         <Text style={styles.label}>Selecciona una elección:</Text>
                         <View style={styles.pickerContainer}>
                             <Picker
-                                selectedValue={selectedEleccion}
-                                onValueChange={setSelectedEleccion}
+                                selectedValue={selectedElectionId}
+                                onValueChange={setSelectedElectionId}
                                 style={styles.picker}
-                                enabled={!editandoId}
+                                enabled={!editingId}
                             >
                                 <Picker.Item label="Selecciona una elección" value="" />
-                                {elecciones.map((eleccion: any) => (
-                                    <Picker.Item key={eleccion.id} label={eleccion.nombre} value={eleccion.id.toString()} />
+                                {elections.map((election: any) => (
+                                    <Picker.Item key={election.id} label={election.nombre} value={election.id.toString()} />
                                 ))}
                             </Picker>
                         </View>
@@ -224,105 +209,80 @@ export default function AgregarCandidatoScreen() {
                         <TextInput
                             style={styles.input}
                             placeholder="Escribe la propuesta"
-                            value={propuesta}
-                            onChangeText={setPropuesta}
+                            value={proposal}
+                            onChangeText={setProposal}
                             multiline
                         />
                         <View style={{ flexDirection: 'row', marginTop: 8 }}>
                             <TouchableOpacity
                                 style={[
-                                    styles.btnAgregar,
-                                    { backgroundColor: editandoId ? '#198754' : '#0d6efd' },
+                                    styles.btnAdd,
+                                    { backgroundColor: editingId ? '#198754' : '#0d6efd' },
                                 ]}
-                                onPress={handleAgregarOActualizar}
-                                disabled={submitting}
+                                onPress={handleSubmit}
+                                disabled={isSubmitting}
                             >
-                                {editandoId ? (
+                                {editingId ? (
                                     <MaterialIcons name="check" size={20} color="#fff" />
                                 ) : (
                                     <Ionicons name="person-add-outline" size={20} color="#fff" />
                                 )}
-                                <Text style={styles.btnAgregarText}>
-                                    {submitting
-                                        ? editandoId
+                                <Text style={styles.btnAddText}>
+                                    {isSubmitting
+                                        ? editingId
                                             ? 'Actualizando...'
                                             : 'Agregando...'
-                                        : editandoId
+                                        : editingId
                                         ? 'Actualizar'
                                         : 'Asignar candidato'}
                                 </Text>
                             </TouchableOpacity>
-                            {editandoId && (
+                            {editingId && (
                                 <TouchableOpacity
-                                    style={[
-                                        styles.btnAgregar,
-                                        { backgroundColor: '#dc3545', marginLeft: 8 },
-                                    ]}
-                                    onPress={limpiarFormulario}
+                                    style={[styles.btnAdd, { backgroundColor: '#dc3545', marginLeft: 8 }]}
+                                    onPress={resetForm}
                                 >
                                     <MaterialIcons name="close" size={20} color="#fff" />
-                                    <Text style={styles.btnAgregarText}>Cancelar</Text>
+                                    <Text style={styles.btnAddText}>Cancelar</Text>
                                 </TouchableOpacity>
                             )}
                         </View>
                     </View>
 
-                    <Text style={[styles.title, { fontSize: 20, marginTop: 24 }]}>
-                        Candidaturas registradas
-                    </Text>
-                    {candidaturas.length === 0 ? (
-                        <Text
-                            style={{
-                                textAlign: 'center',
-                                marginTop: 12,
-                                color: '#888',
-                            }}
-                        >
+                    <Text style={[styles.title, { fontSize: 20, marginTop: 24 }]}>Candidaturas registradas</Text>
+                    {candidacies.length === 0 ? (
+                        <Text style={{ textAlign: 'center', marginTop: 12, color: '#888' }}>
                             No hay candidaturas registradas.
                         </Text>
                     ) : (
-                        candidaturas.map((item) => {
-                            const usuario = usuarios.find(u => u.id === item.userid);
-                            const eleccion = elecciones.find(e => e.id === item.eleccionid);
+                        candidacies.map((item) => {
+                            const user = users.find(u => u.id === item.userid);
+                            const election = elections.find(e => e.id === item.eleccionid);
 
                             return (
                                 <View style={styles.candidaturaCard} key={item.id}>
                                     <Text style={{ color: '#495057', fontSize: 13, marginBottom: 4 }}>
                                         Candidato:{' '}
                                         <Text style={{ fontWeight: 'bold' }}>
-                                            {usuario ? usuario.username : 'Desconocido'}
+                                            {user ? user.username : 'Desconocido'}
                                         </Text>{' '}
                                         | Elección:{' '}
                                         <Text style={{ fontWeight: 'bold' }}>
-                                            {eleccion ? eleccion.nombre : 'Desconocida'}
+                                            {election ? election.nombre : 'Desconocida'}
                                         </Text>
                                     </Text>
-                                    <Text style={{ fontWeight: 'bold', color: '#0d6efd' }}>
-                                        Propuesta:
-                                    </Text>
+                                    <Text style={{ fontWeight: 'bold', color: '#0d6efd' }}>Propuesta:</Text>
                                     <Text>{item.propuesta}</Text>
-                                    <View
-                                        style={{
-                                            flexDirection: 'row',
-                                            marginTop: 8,
-                                            justifyContent: 'flex-end',
-                                        }}
-                                    >
+                                    <View style={{ flexDirection: 'row', marginTop: 8, justifyContent: 'flex-end' }}>
                                         <TouchableOpacity
-                                            style={[
-                                                styles.actionBtn,
-                                                { backgroundColor: '#0d6efd' },
-                                            ]}
-                                            onPress={() => iniciarEdicion(item)}
+                                            style={[styles.actionBtn, { backgroundColor: '#0d6efd' }]}
+                                            onPress={() => startEditing(item)}
                                         >
                                             <MaterialIcons name="edit" size={18} color="#fff" />
                                         </TouchableOpacity>
                                         <TouchableOpacity
-                                            style={[
-                                                styles.actionBtn,
-                                                { backgroundColor: '#dc3545', marginLeft: 8 },
-                                            ]}
-                                            onPress={() => handleEliminar(item.id)}
+                                            style={[styles.actionBtn, { backgroundColor: '#dc3545', marginLeft: 8 }]}
+                                            onPress={() => handleDelete(item.id)}
                                         >
                                             <MaterialIcons name="delete" size={18} color="#fff" />
                                         </TouchableOpacity>
@@ -398,7 +358,7 @@ const styles = StyleSheet.create({
         minHeight: 60,
         textAlignVertical: 'top',
     },
-    btnAgregar: {
+    btnAdd: {
         backgroundColor: '#0d6efd',
         borderRadius: 8,
         paddingVertical: 12,
@@ -413,7 +373,7 @@ const styles = StyleSheet.create({
         elevation: 2,
         marginTop: 10,
     },
-    btnAgregarText: {
+    btnAddText: {
         color: '#fff',
         fontWeight: '700',
         fontSize: 16,

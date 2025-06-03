@@ -17,28 +17,28 @@ import { Picker } from '@react-native-picker/picker';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { supabase } from '../lib/supabase';
 
-export default function EditarEleccionesScreen() {
-    const [elecciones, setElecciones] = useState<any[]>([]);
+export default function EditElectionScreen() {
+    const [elections, setElections] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
-    const [editandoId, setEditandoId] = useState<number | null>(null);
+    const [editingId, setEditingId] = useState<number | null>(null);
     const [form, setForm] = useState<any>({});
-    const [showInicio, setShowInicio] = useState(false);
-    const [showFin, setShowFin] = useState(false);
+    const [showStart, setShowStart] = useState(false);
+    const [showEnd, setShowEnd] = useState(false);
     const [successMsg, setSuccessMsg] = useState('');
     const fadeAnim = useState(new Animated.Value(0))[0];
 
-    const cargarElecciones = async () => {
+    const loadElections = async () => {
         setLoading(true);
         const { data, error } = await supabase.from('eleccions').select('*').order('fecha_inicio', { ascending: false });
-        if (!error) setElecciones(data || []);
+        if (!error) setElections(data || []);
         setLoading(false);
     };
 
     useEffect(() => {
-        cargarElecciones();
+        loadElections();
     }, []);
 
-    const mostrarMensaje = (msg: string) => {
+    const showMessage = (msg: string) => {
         setSuccessMsg(msg);
         Animated.timing(fadeAnim, {
             toValue: 1,
@@ -55,10 +55,10 @@ export default function EditarEleccionesScreen() {
         });
     };
 
-    const handleEliminar = (id: number) => {
+    const handleDelete = (id: number) => {
         if (Platform.OS === 'web') {
             if (window.confirm('¿Estás seguro de que deseas eliminar esta elección?')) {
-                eliminarEleccion(id);
+                deleteElection(id);
             }
         } else {
             Alert.alert(
@@ -69,41 +69,41 @@ export default function EditarEleccionesScreen() {
                     {
                         text: 'Eliminar',
                         style: 'destructive',
-                        onPress: () => eliminarEleccion(id),
+                        onPress: () => deleteElection(id),
                     },
                 ]
             );
         }
     };
 
-    const eliminarEleccion = async (id: number) => {
+    const deleteElection = async (id: number) => {
         Alert.alert('Intentando eliminar elección con id:', String(id));
         const { error } = await supabase.from('eleccions').delete().eq('id', id);
         if (error) {
             Alert.alert('Error', error.message);
         } else {
-            mostrarMensaje('Elección eliminada');
-            setEditandoId(null);
+            showMessage('Elección eliminada');
+            setEditingId(null);
             setForm({});
-            cargarElecciones();
+            loadElections();
         }
     };
 
-    const handleEditar = (eleccion: any) => {
-        setEditandoId(eleccion.id);
+    const handleEdit = (election: any) => {
+        setEditingId(election.id);
         setForm({
-            ...eleccion,
-            fecha_inicio: new Date(eleccion.fecha_inicio),
-            fecha_fin: new Date(eleccion.fecha_fin),
+            ...election,
+            fecha_inicio: new Date(election.fecha_inicio),
+            fecha_fin: new Date(election.fecha_fin),
         });
     };
 
-    const handleGuardar = async () => {
+    const handleSave = async () => {
         if (!form.nombre || !form.tipo_representacion || !form.fecha_inicio || !form.fecha_fin || !form.estado) {
             Alert.alert('Completa todos los campos obligatorios');
             return;
         }
-        const fechaInicioStr =
+        const startDateStr =
             Platform.OS === 'web'
                 ? form.fecha_inicio.getFullYear() +
                 '-' +
@@ -117,7 +117,7 @@ export default function EditarEleccionesScreen() {
                 ':00'
                 : form.fecha_inicio.toISOString();
 
-        const fechaFinStr =
+        const endDateStr =
             Platform.OS === 'web'
                 ? form.fecha_fin.getFullYear() +
                 '-' +
@@ -135,23 +135,23 @@ export default function EditarEleccionesScreen() {
             nombre: form.nombre,
             descripcion: form.descripcion,
             tipo_representacion: form.tipo_representacion,
-            fecha_inicio: fechaInicioStr,
-            fecha_fin: fechaFinStr,
+            fecha_inicio: startDateStr,
+            fecha_fin: endDateStr,
             estado: form.estado,
         }).eq('id', form.id);
 
         if (error) {
             Alert.alert('Error', error.message);
         } else {
-            setEditandoId(null);
+            setEditingId(null);
             setForm({});
-            cargarElecciones();
-            mostrarMensaje('✅ ¡Elección actualizada!');
+            loadElections();
+            showMessage('✅ ¡Elección actualizada!');
         }
     };
 
     const renderItem = ({ item }: { item: any }) => {
-        if (editandoId === item.id) {
+        if (editingId === item.id) {
             return (
                 <View style={styles.cardEdit}>
                     <Text style={styles.nombre}>Editar: {item.nombre}</Text>
@@ -192,7 +192,7 @@ export default function EditarEleccionesScreen() {
                         <>
                             <TouchableOpacity
                                 style={styles.input}
-                                onPress={() => setShowInicio(true)}
+                                onPress={() => setShowStart(true)}
                             >
                                 <Text style={{ color: form.fecha_inicio ? '#263159' : '#888' }}>
                                     {form.fecha_inicio
@@ -200,13 +200,13 @@ export default function EditarEleccionesScreen() {
                                         : 'Selecciona fecha y hora de inicio'}
                                 </Text>
                             </TouchableOpacity>
-                            {showInicio && (
+                            {showStart && (
                                 <DateTimePicker
                                     value={form.fecha_inicio || new Date()}
                                     mode="datetime"
                                     display="default"
                                     onChange={(_, date) => {
-                                        setShowInicio(false);
+                                        setShowStart(false);
                                         if (date) setForm({ ...form, fecha_inicio: date });
                                     }}
                                 />
@@ -225,7 +225,7 @@ export default function EditarEleccionesScreen() {
                         <>
                             <TouchableOpacity
                                 style={styles.input}
-                                onPress={() => setShowFin(true)}
+                                onPress={() => setShowEnd(true)}
                             >
                                 <Text style={{ color: form.fecha_fin ? '#263159' : '#888' }}>
                                     {form.fecha_fin
@@ -233,13 +233,13 @@ export default function EditarEleccionesScreen() {
                                         : 'Selecciona fecha y hora de fin'}
                                 </Text>
                             </TouchableOpacity>
-                            {showFin && (
+                            {showEnd && (
                                 <DateTimePicker
                                     value={form.fecha_fin || new Date()}
                                     mode="datetime"
                                     display="default"
                                     onChange={(_, date) => {
-                                        setShowFin(false);
+                                        setShowEnd(false);
                                         if (date) setForm({ ...form, fecha_fin: date });
                                     }}
                                 />
@@ -259,11 +259,11 @@ export default function EditarEleccionesScreen() {
                         </Picker>
                     </View>
                     <View style={styles.actions}>
-                        <TouchableOpacity style={styles.btnEdit} onPress={handleGuardar}>
+                        <TouchableOpacity style={styles.btnEdit} onPress={handleSave}>
                             <Ionicons name="save-outline" size={18} color="#fff" />
                             <Text style={styles.btnText}>Guardar</Text>
                         </TouchableOpacity>
-                        <TouchableOpacity style={styles.btnDelete} onPress={() => { setEditandoId(null); setForm({}); }}>
+                        <TouchableOpacity style={styles.btnDelete} onPress={() => { setEditingId(null); setForm({}); }}>
                             <Ionicons name="close-outline" size={18} color="#fff" />
                             <Text style={styles.btnText}>Cancelar</Text>
                         </TouchableOpacity>
@@ -297,14 +297,14 @@ export default function EditarEleccionesScreen() {
                 <View style={styles.actions}>
                     <TouchableOpacity
                         style={styles.btnEdit}
-                        onPress={() => handleEditar(item)}
+                        onPress={() => handleEdit(item)}
                     >
                         <Ionicons name="create-outline" size={18} color="#fff" />
                         <Text style={styles.btnText}>Editar</Text>
                     </TouchableOpacity>
                     <TouchableOpacity
                         style={styles.btnDelete}
-                        onPress={() => handleEliminar(item.id)}
+                        onPress={() => handleDelete(item.id)}
                     >
                         <Ionicons name="trash-outline" size={18} color="#fff" />
                         <Text style={styles.btnText}>Eliminar</Text>
@@ -336,7 +336,7 @@ export default function EditarEleccionesScreen() {
                     </Animated.View>
                 ) : null}
                 <FlatList
-                    data={elecciones}
+                    data={elections}
                     keyExtractor={item => item.id.toString()}
                     renderItem={renderItem}
                     numColumns={2}
