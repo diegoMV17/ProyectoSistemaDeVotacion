@@ -1,3 +1,11 @@
+# Proyecto sistema de votacion
+
+Integrrantes:
+Juan David Abril Camargo
+Juan Mateo Acevedo Becerra
+Jhoan Sebastian Mojica Suárez
+Diego Alexis Moreno Valero
+
 # Guía para crear una aplicación con Expo y TypeScript
 
 # Repositorio GitHub
